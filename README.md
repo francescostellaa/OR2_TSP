@@ -4,8 +4,6 @@
 
 ## Requirements
 * [Gnuplot](http://www.gnuplot.info/):  a portable command-line driven graphing utility
-* [CPLEX](https://www.ibm.com/it-it/analytics/cplex-optimizer): IBM CPLEX Optimizer
-* [Concorde](https://www.math.uwaterloo.ca/tsp/concorde/index.html): TSP solver
 
 ## Installation
 * Clone the repository: `git clone https://github.com/francescostellaa/OR2_TSP.git`
