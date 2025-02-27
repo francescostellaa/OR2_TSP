@@ -92,7 +92,7 @@ void parse_command_line(int argc, char** argv, instance *inst)
     if (node_flag) { inst->nnodes = number_nodes; }
 
     if ( help || (VERBOSE >= 10) ) {
-		printf("\n\nAvailable parameters----------------------------------------------------------------------\n");
+		printf("\n\nAvailable parameters-------------------------------------------------------------------------\n");
 		printf("-file %s\n", inst->input_file); 
 		printf("-time_limit %lf\n", inst->timelimit); 
 		printf("-seed %d\n", inst->seed); 

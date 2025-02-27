@@ -40,7 +40,7 @@ void plot_solution(instance *inst) {
 
     // Set up the Gnuplot configuration
     fprintf(gnuplot, "set terminal pngcairo\n");  // Set PNG output
-    fprintf(gnuplot, "set output 'solution.png'\n");
+    fprintf(gnuplot, "set output '../data/solution.png'\n");
     fprintf(gnuplot, "set title 'TSP Solution'\n");
 
     // Define the style
