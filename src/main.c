@@ -21,9 +21,9 @@ int main(int argc, char **argv) {
     
     // Parse the command line parameters
     parse_command_line(argc, argv, &inst);
-    
-    // Read the input file if it is defined otherwise generate random coordinates
     if ( VERBOSE >= 4000 ) { printf("Parse completed!\n"); }
+
+    // Read the input file if it is defined otherwise generate random coordinates
     if(strcmp(inst.input_file, "NULL")) {
         if ( VERBOSE >= 100) {printf("Input file: %s\n", inst.input_file);}
         read_input(&inst);
@@ -33,6 +33,7 @@ int main(int argc, char **argv) {
         random_generator(&inst);
     }
 
+    // Set the solution as the sequence of nodes
     inst.solution = (int *) malloc(inst.nnodes * sizeof(int *));
     for (size_t i = 0; i < inst.nnodes; i++) {
         inst.solution[i] = i;
