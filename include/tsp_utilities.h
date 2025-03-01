@@ -6,8 +6,12 @@
 #include <stdlib.h>
 #include <string.h> 
 
-#define VERBOSE	        1000
+// Verbosity level
+#define VERBOSE	        100
 
+/**
+ * TSP instance structure 
+ */
 typedef struct {
     int nnodes;
     int seed;

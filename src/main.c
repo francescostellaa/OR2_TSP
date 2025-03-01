@@ -2,6 +2,7 @@
 #include <tsp_utilities.h>
 #include <sys/time.h>
 
+// Function declarations
 void free_instance(instance *inst);
 void parse_command_line(int argc, char **argv, instance *inst);
 void read_input(instance *inst);
@@ -16,17 +17,19 @@ int main(int argc, char **argv) {
     gettimeofday(&start, NULL); // Start time
 
     instance inst;
-    if ( VERBOSE >= 30 ) { printf("Instance created!\n"); }
+    if ( VERBOSE >= 4000 ) { printf("Instance created!\n"); }
     
+    // Parse the command line parameters
     parse_command_line(argc, argv, &inst);
     
-    printf("Parse completed!\n");
+    // Read the input file if it is defined otherwise generate random coordinates
+    if ( VERBOSE >= 4000 ) { printf("Parse completed!\n"); }
     if(strcmp(inst.input_file, "NULL")) {
-        printf("Input file: %s\n", inst.input_file);
+        if ( VERBOSE >= 100) {printf("Input file: %s\n", inst.input_file);}
         read_input(&inst);
     }
     else {
-        printf("Random generator\n");
+        if ( VERBOSE >= 100) { printf("Random generator\n"); }
         random_generator(&inst);
     }
 
@@ -35,6 +38,7 @@ int main(int argc, char **argv) {
         inst.solution[i] = i;
     }
     
+    // Plot the solution
     plot_solution(&inst);
     
 	if ( VERBOSE >= 1 ) {
@@ -44,13 +48,14 @@ int main(int argc, char **argv) {
 	}
 
     free_instance(&inst);
-    printf("Instance freed!\n");
+    if ( VERBOSE >= 4000 ){ printf("Instance freed!\n"); }
 
     return 0;
 }
 
 /**
  * Free the instance memory
+ * @param inst instance to be freed
  */
 void free_instance(instance *inst) {
     free(inst->xcoord);
@@ -59,12 +64,14 @@ void free_instance(instance *inst) {
 }
 
 /**
- * Parse the command line parameters
+ * Parse the command line parameters and set the instance values
+ * @param argc number of parameters
+ * @param argv array of parameters
+ * @param inst instance to be set
  */
-void parse_command_line(int argc, char** argv, instance *inst) 
-{ 
+void parse_command_line(int argc, char** argv, instance *inst) { 
 	
-	if ( VERBOSE >= 100 ) printf(" running %s with %d parameters \n", argv[0], argc-1);
+	if ( VERBOSE >= 100 ) printf("Running %s with %d parameters!\n", argv[0], argc-1);
     
 	// default   
 	strcpy(inst->input_file, "NULL");
@@ -105,9 +112,10 @@ void parse_command_line(int argc, char** argv, instance *inst)
 }
 
 /**
- * Read the input file and store the coordinates of the nodes
+ * Read the input file and store the coordinates of the nodes in the instance structure
+ * @param inst instance to store the coordinates
  */
-void read_input(instance *inst){
+void read_input(instance *inst) {
     FILE *file = fopen(inst->input_file, "r");
     if (file == NULL) { print_error("Error opening file\n"); }
 
@@ -122,12 +130,12 @@ void read_input(instance *inst){
 
     while( fgets(line, sizeof(line), file) != NULL){
 
-        if ( VERBOSE >= 2000) { printf("line: %s\n", line); fflush(NULL); }
+        if ( VERBOSE >= 2000 ) { printf("line: %s\n", line); fflush(NULL); }
         if ( strlen(line) < 2 ) continue; // empty line
 
         par_name = strtok(line, " :");
 
-        if ( VERBOSE >= 3000) { printf("par_name: %s\n", par_name); fflush(NULL); }
+        if ( VERBOSE >= 3000 ) { printf("par_name: %s\n", par_name); fflush(NULL); }
         if ( strncmp(par_name, "NAME", 4) == 0 ) { active_section = 0; continue; }
 
         if ( strncmp(par_name, "COMMENT", 7) == 0 ) { 
@@ -145,36 +153,36 @@ void read_input(instance *inst){
         }
 
         if ( strncmp(par_name, "DIMENSION", 9) == 0 ) { 
-            if (inst->nnodes >= 0) { print_error("DIMENSION already defined\n"); }
+            if ( inst->nnodes >= 0 ) { print_error("DIMENSION already defined\n"); }
             active_section = 0;
             token1 = strtok(NULL, " :");
             inst->nnodes = atoi(token1);
-            if ( VERBOSE >= 1000) { printf("DIMENSION: %d\n", inst->nnodes); fflush(NULL); }
+            if ( VERBOSE >= 1000 ) { printf("DIMENSION: %d\n", inst->nnodes); fflush(NULL); }
             inst->xcoord = (double *) malloc(inst->nnodes * sizeof(double));
             inst->ycoord = (double *) malloc(inst->nnodes * sizeof(double));
             inst->solution = (int *) malloc(inst->nnodes * sizeof(int));    
             continue; 
         }
 
-        if (strncmp(par_name, "EDGE_WEIGHT_TYPE", 18) == 0) {
+        if ( strncmp(par_name, "EDGE_WEIGHT_TYPE", 18) == 0 ) {
             active_section = 0;
             token1 = strtok(NULL, " :"); 
-            if(strncmp(token1, "EUC_2D", 6) != 0) { print_error("EDGE_WEIGHT_TYPE different from euclidian!\n"); }
+            if( strncmp(token1, "EUC_2D", 6) != 0 ) { print_error("EDGE_WEIGHT_TYPE different from euclidian!\n"); }
             continue;
         }
 
-        if (strncmp(par_name, "NODE_COORD_SECTION", 18) == 0) { 
-            if (inst->nnodes <= 0) { print_error("DIMENSION not defined\n"); }
+        if ( strncmp(par_name, "NODE_COORD_SECTION", 18) == 0 ) { 
+            if ( inst->nnodes <= 0 ) { print_error("DIMENSION not defined\n"); }
             active_section = 1;
             continue; 
         }
 
-        if (strncmp(par_name, "EOF", 3) == 0) { 
+        if ( strncmp(par_name, "EOF", 3) == 0 ) { 
             active_section = 0;
             break; 
         }
         
-        if (active_section == 1) {
+        if ( active_section == 1 ) {
             int i = atoi(par_name) - 1;
             token1 = strtok(NULL, " :");
             token2 = strtok(NULL, " :");
@@ -184,7 +192,7 @@ void read_input(instance *inst){
             continue;
         }
 
-        printf(" Final active section: %d\n", active_section);
+        if ( VERBOSE >= 1000 ) { (" Final active section: %d\n", active_section); }
         print_error("Wrong format for the current parser!\n");
 
     }

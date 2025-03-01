@@ -1,24 +1,26 @@
 #include <tsp_utilities.h>
-#include <stdlib.h>
 
 /**
- * Print error message and exit
+ * Print error message and exit the program
+ * @param err error message
  */
 void print_error(const char *err) { printf("\n\n ERROR: %s \n\n", err); fflush(NULL); exit(1); } 
 
 /**
- * Generate random coordinates for the nodes
+ * Generate random coordinates for the nodes of the TSP instance
+ * @param inst instance to store the coordinates
  */
 void random_generator(instance *inst) {
     srand(inst->seed);
-    int XY_SIZE = inst->nnodes;
-    inst->xcoord = (double *) malloc(inst->nnodes * sizeof(double));
-    inst->ycoord = (double *) malloc(inst->nnodes * sizeof(double));
-    inst->solution = (int *) malloc(inst->nnodes * sizeof(int *));
-    if ( VERBOSE >= 1000) { printf("XY_SIZE: %d\n", XY_SIZE); fflush(NULL); };
-    for (size_t i = 0; i < XY_SIZE; i++){
-        inst->xcoord[i] = round(rand() % XY_SIZE);
-        inst->ycoord[i] = round(rand() % XY_SIZE);
+    int NODE_NUMBER = inst->nnodes;
+    inst->xcoord = (double *) malloc(NODE_NUMBER * sizeof(double));
+    inst->ycoord = (double *) malloc(NODE_NUMBER * sizeof(double));
+    inst->solution = (int *) malloc(NODE_NUMBER * sizeof(int *));
+
+    if ( VERBOSE >= 1000) { printf("Number of Nodes: %d\n", NODE_NUMBER); fflush(NULL); };
+    for (size_t i = 0; i < NODE_NUMBER; i++){
+        inst->xcoord[i] = round(rand() % NODE_NUMBER);
+        inst->ycoord[i] = round(rand() % NODE_NUMBER);
     }
 
     for (int i = 0; i < 10; i++) {
@@ -29,7 +31,8 @@ void random_generator(instance *inst) {
 }
 
 /**
- * Plot the solution using gnuplot
+ * Plot the solution using gnuplot and save the output as a PNG file
+ * @param inst instance with the solution to be plotted
  */
 void plot_solution(instance *inst) {
     FILE *gnuplot = popen("gnuplot -persist", "w");
