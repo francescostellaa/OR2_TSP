@@ -1,6 +1,16 @@
 # OR2_TSP
 
 ## Project Structure
+```
+OR2_TSP/
+│-- data/           # Directory for dataset files
+│-- include/        # Header files
+│-- src/            # Source code files
+│-- build/          # Build directory (created during compilation)
+│-- CMakeLists.txt  # CMake build configuration
+│-- .gitignore      # Git ignore file
+│-- README.md       # Project documentation
+```
 
 ## Requirements
 * [Gnuplot](http://www.gnuplot.info/):  a portable command-line driven graphing utility
