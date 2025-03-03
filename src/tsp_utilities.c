@@ -6,25 +6,20 @@
  */
 void print_error(const char *err) { printf("\n\n ERROR: %s \n\n", err); fflush(NULL); exit(1); } 
 
+double random01() { return ((double) rand() / RAND_MAX); }
+
 /**
  * Generate random coordinates for the nodes of the TSP instance
  * @param inst instance to store the coordinates
  */
-void random_generator(instance *inst) {
+void random_instance_generator(instance *inst) {
     srand(inst->seed);
-    int NODE_NUMBER = inst->nnodes;
-    inst->xcoord = (double *) malloc(NODE_NUMBER * sizeof(double));
-    inst->ycoord = (double *) malloc(NODE_NUMBER * sizeof(double));
-    inst->solution = (int *) malloc(NODE_NUMBER * sizeof(int *));
+    inst->points = (point*)malloc(inst->nnodes * sizeof(point));
 
-    if ( VERBOSE >= 1000) { printf("Number of Nodes: %d\n", NODE_NUMBER); fflush(NULL); };
-    for (size_t i = 0; i < NODE_NUMBER; i++){
-        inst->xcoord[i] = round(rand() % NODE_NUMBER);
-        inst->ycoord[i] = round(rand() % NODE_NUMBER);
-    }
-
-    for (int i = 0; i < 10; i++) {
-        inst->solution[i] = i;
+    if ( VERBOSE >= 1000) { printf("Number of Nodes: %d\n", inst->nnodes); fflush(NULL); };
+    for (int i = 0; i < inst->nnodes; i++){
+        inst->points[i].x = random01() * MAX_BOUNDARY;
+        inst->points[i].y = random01() * MAX_BOUNDARY;
     }
     
     return;
@@ -34,7 +29,7 @@ void random_generator(instance *inst) {
  * Plot the solution using gnuplot and save the output as a PNG file
  * @param inst instance with the solution to be plotted
  */
-void plot_solution(instance *inst) {
+void plot_solution(instance *inst, int* solution) {
     FILE *gnuplot = popen("gnuplot -persist", "w");
     if (gnuplot == NULL) { 
         printf("Error opening gnuplot\n");
@@ -53,13 +48,13 @@ void plot_solution(instance *inst) {
     fprintf(gnuplot, "plot '-' with linespoints ls 1 title 'TSP Solution'\n");
 
     // Loop through the solution sequence
-    for (int i = 0; i < inst->nnodes; i++) {
-        int node = inst->solution[i];  // Get the node index
-        fprintf(gnuplot, "%lf %lf\n", inst->xcoord[node], inst->ycoord[node]);
+    for (int i = 0; i < (inst->nnodes + 1); i++) {
+        int node = solution[i];  // Get the node index
+        fprintf(gnuplot, "%lf %lf\n", inst->points[node].x, inst->points[node].y);
     }
 
     // Close the tour by adding the first node at the end
-    fprintf(gnuplot, "%lf %lf\n", inst->xcoord[inst->solution[0]], inst->ycoord[inst->solution[0]]);
+    //fprintf(gnuplot, "%lf %lf\n", inst->xcoord[solution[0]], inst->ycoord[solution[0]]);
 
     // End data input
     fprintf(gnuplot, "e\n");
