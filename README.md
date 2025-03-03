@@ -23,7 +23,7 @@ OR2_TSP/
 * Execute `make` command to build the project
 
 ## Command line usage
-If we have a file from TSPLIB, use the following command line:
+If you have a file from TSPLIB, use the following command line:
 ```./tsp -file ../data/<filename> -time_limit <tl> -seed <seed>```
 
 Otherwise, if we want to use artificial data randomly generated, use the following one:
