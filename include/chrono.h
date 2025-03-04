@@ -6,5 +6,4 @@
 
 double second();  
 
-
 #endif // CHRONO_H

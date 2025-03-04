@@ -26,6 +26,116 @@ void random_instance_generator(instance *inst) {
 }
 
 /**
+ * Compute the Euclidean distance between two nodes
+ * @param i index of the first node
+ * @param j index of the second node
+ * @param inst instance with the nodes
+ * @return distance between the nodes
+ */
+double dist(int i, int j, instance *inst) {
+    return (sqrt(pow(inst->points[i].x - inst->points[j].x, 2) + pow(inst->points[i].y - inst->points[j].y, 2)));
+}
+
+/**
+ * Compute the squared Euclidean distance between two nodes
+ * @param i index of the first node
+ * @param j index of the second node
+ * @param inst instance with the nodes
+ * @return squared distance between the nodes
+ */
+double dist2(int i, int j, instance *inst) {
+    return (pow(inst->points[i].x - inst->points[j].x, 2) + pow(inst->points[i].y - inst->points[j].y, 2));
+}
+
+/**
+ * Compute the cost of all edges in the instance
+ * @param instance instance with the nodes
+ */
+void compute_all_costs(instance* instance) {
+    int n = instance->nnodes;
+    instance->cost = (double*)malloc(n * n * sizeof(double));
+
+    for (int i = 0; i < n; i++) {
+        for (int j = i; j < n; j++) { 
+            double d = dist(i, j, instance);
+            instance->cost[i * n + j] = d;
+            instance->cost[j * n + i] = d; 
+        }
+    }
+}
+
+/**
+ * Check if the solution is feasible
+ * @param solution array with the solution
+ * @param cost cost of the solution
+ * @param inst instance with the solution to be checked
+ * @return 1 if the solution is feasible, 0 otherwise
+ */
+int check_sol(int* solution, double cost, instance* inst){
+    
+    int* count = (int*)calloc(inst->nnodes, sizeof(int));
+
+    for (int i = 0; i < inst->nnodes; i++){
+        count[solution[i]]++;
+    }
+
+    for (int i = 0; i < inst->nnodes; i++){
+        //printf("%d %d\n", i, count[i]);
+        if (count[i] != 1){
+            printf("Node %d appears %d times in the solution\n", i, count[i]);
+            return 0;
+        }
+    }
+
+    double total_cost = 0;
+    for (int i = 0; i < inst->nnodes + 1; i++){
+        total_cost += inst->cost[solution[i] * inst->nnodes + solution[i+1]];
+    }
+
+    if (fabs(total_cost - cost) > EPS_COST){
+        printf("Computed total cost: %lf\n", total_cost);
+        printf("Expected cost: %lf\n", cost);
+        printf("Computed cost is different from the input cost\n");
+        return 0;
+    }
+
+    return 1;
+}
+
+/**
+ * Update the best solution found so far
+ * @param inst instance with the solution
+ * @param solution array with the solution
+ * @param cost cost of the solution
+ */
+void update_best_sol(instance* inst, int* solution, double cost) {
+    if (inst->best_cost > cost) {
+        inst->best_cost = cost;
+        for (int i = 0; i < inst->nnodes + 1; i++) {
+            inst->best_sol[i] = solution[i];
+        }
+
+        if (!check_sol(inst->best_sol, inst->best_cost, inst)) {
+            print_error("Invalid solution");
+        }
+    }
+}
+
+/**
+ * Swap two elements in an array
+ * @param arr array with the elements
+ * @param i index of the first element
+ * @param j index of the second element
+ */
+void swap(int* arr, int i, int j) {
+    if (i != j) {
+        int temp = arr[i];
+        arr[i] = arr[j];
+        arr[j] = temp;
+    }
+}
+
+/**
  * Plot the solution using gnuplot and save the output as a PNG file
  * @param inst instance with the solution to be plotted
  */

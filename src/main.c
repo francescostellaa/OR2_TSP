@@ -2,6 +2,7 @@
 #include <tsp_utilities.h>
 #include <sys/time.h>
 #include <chrono.h>
+#include <greedy.h>
 
 // Function declarations
 double second();
@@ -30,18 +31,15 @@ int main(int argc, char **argv) {
         if ( VERBOSE >= 100) { printf("Random generator\n"); }
         random_instance_generator(&inst);
     }
-
-    // Set the solution as the sequence of nodes
-    inst.best_solution = (int *) malloc((inst.nnodes+1) * sizeof(int));
-    for (int i = 0; i < inst.nnodes; i++) {
-        inst.best_solution[i] = i;
-    }
-    inst.best_solution[inst.nnodes] = 0;
-    double t2 = second(); 
-
-    // Plot the solution
-    plot_solution(&inst, inst.best_solution);
     
+    compute_all_costs(&inst);
+    if ( VERBOSE >= 4000 ) { printf("Costs computed!\n"); }
+    
+    if (greedy_multi_start(&inst)) {
+        print_error("Error in greedy_multi_start\n");
+    }
+    
+    double t2 = second(); // End time
 	if ( VERBOSE >= 1 ) {
         double elapsed_time = t2-t1;
         printf("Execution time: %lf seconds\n", elapsed_time);
@@ -59,7 +57,7 @@ int main(int argc, char **argv) {
  */
 void free_instance(instance *inst) {
     free(inst->points);
-    free(inst->best_solution);
+    free(inst->best_sol);
 }
 
 /**
@@ -78,7 +76,8 @@ void parse_command_line(int argc, char** argv, instance *inst) {
 	inst->timelimit = CPX_INFBOUND;     
     inst->nnodes = 0;
     inst->points = NULL;
-    inst->best_solution = NULL;
+    inst->best_sol = NULL;
+    inst->best_cost = INF_COST;
     
     int help = 0; if ( argc < 1 ) help = 1;// if no parameters, print help
     int node_flag = 1, number_nodes = 0;
@@ -170,7 +169,7 @@ void read_input(instance *inst) {
             inst->nnodes = atoi(token1);
             if ( VERBOSE >= 1000 ) { printf("DIMENSION: %d\n", inst->nnodes); fflush(NULL); }
             inst->points = (point*)malloc(inst->nnodes * sizeof(point));
-            inst->best_solution = (int *) malloc(inst->nnodes * sizeof(int));    
+            inst->best_sol = (int *) malloc(inst->nnodes * sizeof(int));    
             continue; 
         }
 
