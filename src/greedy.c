@@ -9,6 +9,7 @@
 int greedy(int initial_point, instance* inst){
     int n = inst->nnodes;
     int* solution = (int*)malloc((n+1) * sizeof(int));
+    
     double new_cost = 0;
 
     for (int i = 0; i < n; i++) {

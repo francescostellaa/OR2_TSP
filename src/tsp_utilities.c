@@ -14,7 +14,8 @@ double random01() { return ((double) rand() / RAND_MAX); }
  */
 void random_instance_generator(instance *inst) {
     srand(inst->seed);
-    inst->points = (point*)malloc(inst->nnodes * sizeof(point));
+    inst->points = (point*) malloc(inst->nnodes * sizeof(point));
+    inst->best_sol = (int *) malloc(inst->nnodes + 1 * sizeof(int));
 
     if ( VERBOSE >= 1000) { printf("Number of Nodes: %d\n", inst->nnodes); fflush(NULL); };
     for (int i = 0; i < inst->nnodes; i++){
@@ -81,7 +82,6 @@ int check_sol(int* solution, double cost, instance* inst){
     }
 
     for (int i = 0; i < n; i++){
-        //printf("%d %d\n", i, count[i]);
         if (count[i] != 1){
             printf("Node %d appears %d times in the solution\n", i, count[i]);
             return 0;
@@ -110,6 +110,7 @@ int check_sol(int* solution, double cost, instance* inst){
 void update_best_sol(instance* inst, int* solution, double cost) {
     if (inst->best_cost > cost) {
         inst->best_cost = cost;
+
         for (int i = 0; i < inst->nnodes + 1; i++) {
             inst->best_sol[i] = solution[i];
         }

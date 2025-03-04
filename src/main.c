@@ -169,7 +169,7 @@ void read_input(instance *inst) {
             inst->nnodes = atoi(token1);
             if ( VERBOSE >= 1000 ) { printf("DIMENSION: %d\n", inst->nnodes); fflush(NULL); }
             inst->points = (point*)malloc(inst->nnodes * sizeof(point));
-            inst->best_sol = (int *) malloc(inst->nnodes * sizeof(int));    
+            inst->best_sol = (int *) malloc(inst->nnodes + 1 * sizeof(int));    
             continue; 
         }
 
