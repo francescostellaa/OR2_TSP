@@ -50,5 +50,6 @@ void update_best_sol(instance* inst, int* solution, double cost);
 double dist(int i, int j, instance *inst);
 double dist2(int i, int j, instance *inst);
 void swap(int* arr, int i, int j);
+void refinement_two_opt(int* solution, instance* inst);
 
 #endif // TSP_UTILITIES_H

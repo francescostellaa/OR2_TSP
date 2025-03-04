@@ -164,13 +164,55 @@ void plot_solution(instance *inst, int* solution) {
     }
 
     // Close the tour by adding the first node at the end
-    //fprintf(gnuplot, "%lf %lf\n", inst->xcoord[solution[0]], inst->ycoord[solution[0]]);
+    fprintf(gnuplot, "%lf %lf\n", inst->points[solution[0]].x, inst->points[solution[0]].y);
 
     // End data input
     fprintf(gnuplot, "e\n");
 
     fflush(gnuplot);
     pclose(gnuplot);  // Close Gnuplot properly
+
+    return;
+}
+
+/**
+ * Apply the 2-opt refinement to the solution
+ */
+void refinement_two_opt(int* solution, instance* inst){
+    int* temp_solution = (int*)malloc((inst->nnodes + 1) * sizeof(int));
+    memcpy(temp_solution, solution, (inst->nnodes + 1) * sizeof(int));
+    double temp_cost = inst->best_cost;
+    int n = inst->nnodes;
+
+    for (int i = 1; i < n-2; i++){
+        double min_delta = 0;
+        int min_j = -1;
+        for (int j = i+1; j < n-1; j++){
+            double delta = inst->cost[solution[i] * n + solution[j]] + inst->cost[solution[i+1] * n + solution[j+1]]
+                 - inst->cost[solution[i] * n + solution[i+1]] - inst->cost[solution[j] * n + solution[j+1]];
+            if (delta < min_delta){
+                min_delta = delta;
+                min_j = j;
+            }
+        }
+
+        if (min_delta <= 0 && min_j != -1){
+            temp_cost += min_delta;
+            int k = i;
+            int h = min_j;
+            printf("min_delta: %lf\n", min_delta);
+            printf("i: %d, j: %d\n", i, min_j);
+            while (k < h){
+                swap(temp_solution, k, h);
+                k++;
+                h--;
+            }
+        }
+    }
+
+    update_best_sol(inst, temp_solution, temp_cost);
+
+    free(temp_solution);
 
     return;
 }

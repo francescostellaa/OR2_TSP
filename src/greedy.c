@@ -39,6 +39,8 @@ int greedy(int initial_point, instance* inst){
 
     update_best_sol(inst, solution, new_cost);
 
+    refinement_two_opt(inst->best_sol, inst);
+
     free(solution);
 
     return 0;
