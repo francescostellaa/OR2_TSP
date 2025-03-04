@@ -38,9 +38,9 @@ int greedy(int initial_point, instance* inst){
     }
 
     update_best_sol(inst, solution, new_cost);
-
+    
     refinement_two_opt(inst->best_sol, inst);
-
+    
     free(solution);
 
     return 0;
@@ -65,7 +65,7 @@ int greedy_multi_start(instance* inst) {
         };
     }
 
-    // plot_solution(inst, inst->best_sol);
+    plot_solution(inst, inst->best_sol);
     if(VERBOSE >= 1) { printf("Best cost: %lf\n", inst->best_cost); }
 
     return 0;
