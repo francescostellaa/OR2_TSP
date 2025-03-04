@@ -74,12 +74,13 @@ void compute_all_costs(instance* instance) {
 int check_sol(int* solution, double cost, instance* inst){
     
     int* count = (int*)calloc(inst->nnodes, sizeof(int));
+    int n = inst->nnodes;
 
     for (int i = 0; i < inst->nnodes; i++){
         count[solution[i]]++;
     }
 
-    for (int i = 0; i < inst->nnodes; i++){
+    for (int i = 0; i < n; i++){
         //printf("%d %d\n", i, count[i]);
         if (count[i] != 1){
             printf("Node %d appears %d times in the solution\n", i, count[i]);
@@ -88,13 +89,11 @@ int check_sol(int* solution, double cost, instance* inst){
     }
 
     double total_cost = 0;
-    for (int i = 0; i < inst->nnodes + 1; i++){
-        total_cost += inst->cost[solution[i] * inst->nnodes + solution[i+1]];
+    for (int i = 0; i < n; i++){
+        total_cost += inst->cost[solution[i] * n + solution[i+1]];
     }
 
     if (fabs(total_cost - cost) > EPS_COST){
-        printf("Computed total cost: %lf\n", total_cost);
-        printf("Expected cost: %lf\n", cost);
         printf("Computed cost is different from the input cost\n");
         return 0;
     }
