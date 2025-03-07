@@ -77,6 +77,12 @@ int check_sol(int* solution, double cost, instance* inst){
     int* count = (int*)calloc(inst->nnodes, sizeof(int));
     int n = inst->nnodes;
 
+    // printf("Check solution: ");
+    //     for (int i = 0; i < inst->nnodes + 1; i++) {
+    //         printf("%d ", solution[i]);
+    //     }
+    //     printf("\n\n");
+
     for (int i = 0; i < inst->nnodes; i++){
         count[solution[i]]++;
     }
@@ -147,15 +153,15 @@ void plot_solution(instance *inst, int* solution) {
     }
 
     // Set up the Gnuplot configuration
-    fprintf(gnuplot, "set terminal pngcairo\n");  // Set PNG output
+    fprintf(gnuplot, "set terminal pngcairo enhanced color font 'Helvetica,12'\n");  // Set PNG output
     fprintf(gnuplot, "set output '../data/solution.png'\n");
-    fprintf(gnuplot, "set title 'TSP Solution'\n");
+    fprintf(gnuplot, "set title 'Nearest Neighbor Solution with 2-OPT Refining' font 'Helvetica,16\n");
 
     // Define the style
     fprintf(gnuplot, "set style line 1 lc rgb '#FF0000' lt 1 lw 2 pt 7 ps 2\n");
 
     // Plot command
-    fprintf(gnuplot, "plot '-' with linespoints ls 1 title 'TSP Solution'\n");
+    fprintf(gnuplot, "plot '-' with linespoints ls 1 title 'NN with 2-OPT'\n");
 
     // Loop through the solution sequence
     for (int i = 0; i < (inst->nnodes + 1); i++) {
@@ -185,18 +191,22 @@ void refinement_two_opt(int* solution, instance* inst) {
     int n = inst->nnodes;
 
     int improvement = 1;
-    while (improvement) {
+    int max_iterations = 1000; 
+    int iteration_count = 0;
+
+    while (improvement && iteration_count < max_iterations) {
+        iteration_count++;
         improvement = 0;
         double best_delta = 0;
         int best_i = -1;
         int best_j = -1;
 
         for (int i = 0; i < n - 1; i++) {
-            for (int j = i + 2; j < n; j++) {
+            for (int j = i + 1; j < n; j++) {
                 double delta = inst->cost[temp_solution[i] * n + temp_solution[j]] +
                                inst->cost[temp_solution[i + 1] * n + temp_solution[j + 1]] -
-                               inst->cost[temp_solution[i] * n + temp_solution[i + 1]] -
-                               inst->cost[temp_solution[j] * n + temp_solution[j + 1]];
+                               inst->cost[temp_solution[i] * n + temp_solution[(i + 1)%n]] -
+                               inst->cost[temp_solution[j] * n + temp_solution[(j + 1)%n]];
 
                 if (delta < best_delta) {
                     best_delta = delta;
@@ -208,19 +218,22 @@ void refinement_two_opt(int* solution, instance* inst) {
                 
         if (best_delta < 0) {
             // Perform the 2-opt swap
-            int k = best_i + 1;
-            int h = best_j;
-            while (k < h) {
-                swap(temp_solution, k, h);
-                k++;
-                h--;
+            int i = best_i + 1;
+            int j = best_j;
+            while (i < j) {
+                swap(temp_solution, i, j);
+                i++;
+                j--;
             }
             temp_cost += best_delta;
             improvement = 1;
         }
+
     }
-    
-    update_best_sol(inst, temp_solution, temp_cost);
+
+    if (check_sol(temp_solution, temp_cost, inst)){
+        update_best_sol(inst, temp_solution, temp_cost);
+    }
 
     free(temp_solution);
 }
