@@ -155,13 +155,13 @@ void plot_solution(instance *inst, int* solution) {
     // Set up the Gnuplot configuration
     fprintf(gnuplot, "set terminal pngcairo enhanced color font 'Helvetica,12'\n");  // Set PNG output
     fprintf(gnuplot, "set output '../data/solution.png'\n");
-    fprintf(gnuplot, "set title 'Nearest Neighbor Solution with 2-OPT Refining' font 'Helvetica,16\n");
+    fprintf(gnuplot, "set title 'TSP Solution' font 'Helvetica,16\n");
 
     // Define the style
     fprintf(gnuplot, "set style line 1 lc rgb '#FF0000' lt 1 lw 2 pt 7 ps 2\n");
 
     // Plot command
-    fprintf(gnuplot, "plot '-' with linespoints ls 1 title 'NN with 2-OPT'\n");
+    fprintf(gnuplot, "plot '-' with linespoints ls 1 title 'TSP solution'\n");
 
     // Loop through the solution sequence
     for (int i = 0; i < (inst->nnodes + 1); i++) {
