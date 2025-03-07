@@ -15,7 +15,7 @@ double random01() { return ((double) rand() / RAND_MAX); }
 void random_instance_generator(instance *inst) {
     srand(inst->seed);
     inst->points = (point*) malloc(inst->nnodes * sizeof(point));
-    inst->best_sol = (int *) malloc(inst->nnodes + 1 * sizeof(int));
+    inst->best_sol = (int *) malloc((inst->nnodes + 1) * sizeof(int));
 
     if ( VERBOSE >= 1000) { printf("Number of Nodes: %d\n", inst->nnodes); fflush(NULL); };
     for (int i = 0; i < inst->nnodes; i++){
