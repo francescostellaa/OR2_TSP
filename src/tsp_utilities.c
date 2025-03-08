@@ -191,11 +191,8 @@ void refinement_two_opt(int* solution, instance* inst) {
     int n = inst->nnodes;
 
     int improvement = 1;
-    int max_iterations = 1000; 
-    int iteration_count = 0;
 
-    while (improvement && iteration_count < max_iterations) {
-        iteration_count++;
+    while (improvement) {
         improvement = 0;
         double best_delta = 0;
         int best_i = -1;
@@ -216,7 +213,7 @@ void refinement_two_opt(int* solution, instance* inst) {
             }
         }
                 
-        if (best_delta < 0) {
+        if (best_delta < -EPS_COST) {
             // Perform the 2-opt swap
             int i = best_i + 1;
             int j = best_j;
