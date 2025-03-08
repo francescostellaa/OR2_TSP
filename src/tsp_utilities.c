@@ -202,8 +202,8 @@ void refinement_two_opt(int* solution, instance* inst) {
             for (int j = i + 1; j < n; j++) {
                 double delta = inst->cost[temp_solution[i] * n + temp_solution[j]] +
                                inst->cost[temp_solution[i + 1] * n + temp_solution[j + 1]] -
-                               inst->cost[temp_solution[i] * n + temp_solution[(i + 1)%n]] -
-                               inst->cost[temp_solution[j] * n + temp_solution[(j + 1)%n]];
+                               inst->cost[temp_solution[i] * n + temp_solution[i + 1]] -
+                               inst->cost[temp_solution[j] * n + temp_solution[j + 1]];
 
                 if (delta < best_delta) {
                     best_delta = delta;
@@ -215,7 +215,7 @@ void refinement_two_opt(int* solution, instance* inst) {
                 
         if (best_delta < -EPS_COST) {
             // Perform the 2-opt swap
-            int i = best_i + 1;
+            int i = best_i+1;
             int j = best_j;
             while (i < j) {
                 swap(temp_solution, i, j);
