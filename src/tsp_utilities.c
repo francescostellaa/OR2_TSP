@@ -77,12 +77,6 @@ int check_sol(int* solution, double cost, instance* inst){
     int* count = (int*)calloc(inst->nnodes, sizeof(int));
     int n = inst->nnodes;
 
-    // printf("Check solution: ");
-    //     for (int i = 0; i < inst->nnodes + 1; i++) {
-    //         printf("%d ", solution[i]);
-    //     }
-    //     printf("\n\n");
-
     for (int i = 0; i < inst->nnodes; i++){
         count[solution[i]]++;
     }
@@ -193,6 +187,12 @@ void refinement_two_opt(int* solution, instance* inst) {
     int improvement = 1;
 
     while (improvement) {
+
+        if(second() - inst->tstart > inst->timelimit) {
+            if ( VERBOSE >= 100 ) { printf("Time limit reached\n"); }
+            break;
+        }
+
         improvement = 0;
         double best_delta = 0;
         int best_i = -1;
