@@ -1,7 +1,6 @@
 #include <cplex.h>
 #include <tsp_utilities.h>
 #include <sys/time.h>
-#include <chrono.h>
 #include <greedy.h>
 
 // Function declarations

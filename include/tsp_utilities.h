@@ -5,6 +5,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h> 
+#include <chrono.h>
 
 // Verbosity level
 #define VERBOSE 1001
