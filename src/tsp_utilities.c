@@ -77,6 +77,11 @@ int check_sol(int* solution, double cost, instance* inst){
     int* count = (int*)calloc(inst->nnodes, sizeof(int));
     int n = inst->nnodes;
 
+    if (solution[n] != solution[0]){
+        printf("First and last nodes are different\n");
+        return 0;
+    }
+
     for (int i = 0; i < inst->nnodes; i++){
         count[solution[i]]++;
     }
