@@ -33,10 +33,6 @@ int greedy(int initial_point, instance* inst){
     solution[n] = solution[0];
     new_cost += inst->cost[solution[n-1] * n + solution[n]];
 
-    if (!check_sol(solution, new_cost, inst)){
-        print_error("Invalid solution");
-    }
-
     update_best_sol(inst, solution, new_cost);
     
     refinement_two_opt(inst->best_sol, inst);
