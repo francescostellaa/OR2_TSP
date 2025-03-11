@@ -42,7 +42,7 @@ typedef struct {
 
 } instance;
 
-void free_instance(instance *inst)
+void free_instance(instance *inst);
 void read_input(instance *inst);
 void parse_command_line(int argc, char** argv, instance *inst);
 double random01();
