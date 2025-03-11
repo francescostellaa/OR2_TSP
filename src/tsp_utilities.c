@@ -221,8 +221,13 @@ void compute_all_costs(instance* instance) {
     for (int i = 0; i < n; i++) {
         for (int j = i; j < n; j++) { 
             double d = dist(i, j, instance);
-            instance->cost[i * n + j] = d;
-            instance->cost[j * n + i] = d; 
+            if (strcmp(instance->input_file, "NULL") == 0) {
+                instance->cost[i * n + j] = round(d);
+                instance->cost[j * n + i] = round(d); 
+            } else {
+                instance->cost[i * n + j] = d;
+                instance->cost[j * n + i] = d; 
+            }
         }
     }
 }
@@ -341,62 +346,4 @@ void plot_solution(instance *inst, int* solution) {
     pclose(gnuplot);  // Close Gnuplot properly
 
     return;
-}
-
-/**
- * Apply the 2-opt refinement to the solution
- */
-void refinement_two_opt(int* solution, instance* inst) {
-    int* temp_solution = (int*)malloc((inst->nnodes + 1) * sizeof(int));
-    memcpy(temp_solution, solution, (inst->nnodes + 1) * sizeof(int));
-    double temp_cost = inst->best_cost;
-    int n = inst->nnodes;
-
-    int improvement = 1;
-
-    while (improvement) {
-
-        if(second() - inst->tstart > inst->timelimit) {
-            if ( VERBOSE >= 100 ) { printf("Time limit reached\n"); }
-            break;
-        }
-
-        improvement = 0;
-        double best_delta = 0;
-        int best_i = -1;
-        int best_j = -1;
-
-        for (int i = 0; i < n - 1; i++) {
-            for (int j = i + 1; j < n; j++) {
-                double delta = inst->cost[temp_solution[i] * n + temp_solution[j]] +
-                               inst->cost[temp_solution[i + 1] * n + temp_solution[j + 1]] -
-                               inst->cost[temp_solution[i] * n + temp_solution[i + 1]] -
-                               inst->cost[temp_solution[j] * n + temp_solution[j + 1]];
-
-                if (delta < best_delta) {
-                    best_delta = delta;
-                    best_i = i;
-                    best_j = j;
-                }
-            }
-        }
-                
-        if (best_delta < -EPS_COST) {
-            // Perform the 2-opt swap
-            int i = best_i+1;
-            int j = best_j;
-            while (i < j) {
-                swap(temp_solution, i, j);
-                i++;
-                j--;
-            }
-            temp_cost += best_delta;
-            improvement = 1;
-        }
-
-    }
-
-    update_best_sol(inst, temp_solution, temp_cost);
-
-    free(temp_solution);
 }
