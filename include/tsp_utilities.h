@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h> 
 #include <chrono.h>
+#include <cplex.h>
 
 // Verbosity level
 #define VERBOSE 1001
@@ -41,6 +42,8 @@ typedef struct {
 
 } instance;
 
+void read_input(instance *inst);
+void parse_command_line(int argc, char** argv, instance *inst);
 double random01();
 void random_instance_generator(instance *inst);
 void plot_solution(instance *inst, int* solution);
