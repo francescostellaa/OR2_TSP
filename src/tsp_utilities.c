@@ -223,7 +223,7 @@ void compute_all_costs(instance* instance) {
     for (int i = 0; i < n; i++) {
         for (int j = i; j < n; j++) { 
             double d = dist(i, j, instance);
-            if (strcmp(instance->input_file, "NULL") == 0) {
+            if (strcmp(instance->input_file, "NULL") != 0) {
                 instance->cost[i * n + j] = round(d);
                 instance->cost[j * n + i] = round(d); 
             } else {

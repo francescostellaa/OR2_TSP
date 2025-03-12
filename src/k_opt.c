@@ -61,9 +61,7 @@ void two_opt(int* solution, instance* inst) {
 
 void reverse_segment(int* sol, int start, int end) {
     while (start < end) {
-        int temp = sol[start];
-        sol[start] = sol[end];
-        sol[end] = temp;
+        swap(sol, start, end);
         start++;
         end--;
     }
@@ -80,30 +78,33 @@ void shake_three_edges(int* solution, instance* inst, int* elements_to_swap){
     int j = elements_to_swap[1];
     int k = elements_to_swap[2];
 
-    int reconnection = rand() % 4;
+    int reconnection = rand() % 1;
+
+    printf("Indices to swap: %d %d %d\n", i, j, k);
 
     switch (reconnection)
     {
         case 0:
-            reverse_segment(temp_solution, j + 1, k);
-            reverse_segment(temp_solution, i + 1, j);
-            reverse_segment(temp_solution, j + 1, k);
+        printf("Case 0\n");
+            reverse_segment(temp_solution, i+1, k);
+            reverse_segment(temp_solution, j+1, i+1);
+            reverse_segment(temp_solution, j+1, k+1);
             break;
-        case 1:
-            reverse_segment(temp_solution, i + 1, j);
-            reverse_segment(temp_solution, j + 1, k);
-            reverse_segment(temp_solution, i + 1, j);
-            break;
-        case 2:
-            reverse_segment(temp_solution, j + 1, k);
-            reverse_segment(temp_solution, i + 1, j);
-            reverse_segment(temp_solution, j + 1, k);
-            break;
-        case 3:
-            reverse_segment(temp_solution, i + 1, k);
-            reverse_segment(temp_solution, j + 1, k);
-            reverse_segment(temp_solution, i + 1, j);
-            break;
+        // case 1:
+        //     reverse_segment(temp_solution, i + 1, j);
+        //     reverse_segment(temp_solution, j + 1, k);
+        //     reverse_segment(temp_solution, i + 1, j);
+        //     break;
+        // case 2:
+        //     reverse_segment(temp_solution, j + 1, k);
+        //     reverse_segment(temp_solution, i + 1, j);
+        //     reverse_segment(temp_solution, j + 1, k);
+        //     break;
+        // case 3:
+        //     reverse_segment(temp_solution, i + 1, k);
+        //     reverse_segment(temp_solution, j + 1, k);
+        //     reverse_segment(temp_solution, i + 1, j);
+        //     break;
     
     }
 

@@ -18,7 +18,7 @@ int vns(instance* inst) {
         if (k > 2){
             int* indices_to_kick = (int*)malloc(k_max * sizeof(int));
             indices_to_kick[0] = rand() % (n - 2);
-            indices_to_kick[1] = indices_to_kick[0] + 1 + (rand() % (n - indices_to_kick[0] - 1));
+            indices_to_kick[1] = indices_to_kick[0] + 1 + (rand() % (n - indices_to_kick[0] - 2));
             indices_to_kick[2] = indices_to_kick[1] + 1 + (rand() % (n - indices_to_kick[1] - 1));
 
             shake_three_edges(inst->best_sol, inst, indices_to_kick);
@@ -41,6 +41,9 @@ int vns(instance* inst) {
         }
 
     }
+
+    plot_solution(inst, inst->best_sol);
+    if(VERBOSE >= 1) { printf("Best cost: %lf\n", inst->best_cost); }
 
     return 0;
 }
