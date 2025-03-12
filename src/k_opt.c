@@ -58,18 +58,53 @@ void two_opt(int* solution, instance* inst) {
     free(temp_solution);
 }
 
-/**
- * Apply the 3-opt refinement to the solution
- */
-void three_opt(int* solution, instance* inst, int* elements_to_swap){
+
+void reverse_segment(int* sol, int start, int end) {
+    while (start < end) {
+        int temp = sol[start];
+        sol[start] = sol[end];
+        sol[end] = temp;
+        start++;
+        end--;
+    }
+}
+
+void shake_three_edges(int* solution, instance* inst, int* elements_to_swap){
 
     int* temp_solution = (int*)malloc((inst->nnodes + 1) * sizeof(int));
     memcpy(temp_solution, solution, (inst->nnodes + 1) * sizeof(int));
     double temp_cost = inst->best_cost;
     int n = inst->nnodes;
 
-    int i = elements_to_swap[0] % n;
-    int j = j % n;
-    int k = k % n;
+    int i = elements_to_swap[0];
+    int j = elements_to_swap[1];
+    int k = elements_to_swap[2];
+
+    int reconnection = rand() % 4;
+
+    switch (reconnection)
+    {
+        case 0:
+            reverse_segment(temp_solution, j + 1, k);
+            reverse_segment(temp_solution, i + 1, j);
+            reverse_segment(temp_solution, j + 1, k);
+            break;
+        case 1:
+            reverse_segment(temp_solution, i + 1, j);
+            reverse_segment(temp_solution, j + 1, k);
+            reverse_segment(temp_solution, i + 1, j);
+            break;
+        case 2:
+            reverse_segment(temp_solution, j + 1, k);
+            reverse_segment(temp_solution, i + 1, j);
+            reverse_segment(temp_solution, j + 1, k);
+            break;
+        case 3:
+            reverse_segment(temp_solution, i + 1, k);
+            reverse_segment(temp_solution, j + 1, k);
+            reverse_segment(temp_solution, i + 1, j);
+            break;
+    
+    }
 
 }

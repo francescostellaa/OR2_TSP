@@ -20,7 +20,7 @@ int vns(instance* inst) {
             indices_to_kick[1] = indices_to_kick[0] + 1 + (rand() % (n - indices_to_kick[0] - 1));
             indices_to_kick[2] = indices_to_kick[1] + 1 + (rand() % (n - indices_to_kick[1] - 1));
 
-            three_opt(inst->best_sol, inst, indices_to_kick);
+            shake_three_edges(inst->best_sol, inst, indices_to_kick);
 
             free(indices_to_kick);
         }
