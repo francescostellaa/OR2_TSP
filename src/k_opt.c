@@ -57,3 +57,19 @@ void two_opt(int* solution, instance* inst) {
 
     free(temp_solution);
 }
+
+/**
+ * Apply the 3-opt refinement to the solution
+ */
+void three_opt(int* solution, instance* inst, int* elements_to_swap){
+
+    int* temp_solution = (int*)malloc((inst->nnodes + 1) * sizeof(int));
+    memcpy(temp_solution, solution, (inst->nnodes + 1) * sizeof(int));
+    double temp_cost = inst->best_cost;
+    int n = inst->nnodes;
+
+    int i = elements_to_swap[0] % n;
+    int j = j % n;
+    int k = k % n;
+
+}

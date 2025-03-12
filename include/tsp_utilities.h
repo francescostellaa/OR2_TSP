@@ -33,9 +33,11 @@ typedef struct {
     char input_file[256];
     point* points;
 
+    double* cost;
     int* best_sol;
     double best_cost;
-    double* cost;
+    double* best_cost_history;
+    int history_size;
 
     double timelimit;
     double tstart;

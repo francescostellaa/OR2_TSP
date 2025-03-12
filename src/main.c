@@ -1,6 +1,7 @@
 #include <tsp_utilities.h>
 #include <sys/time.h>
 #include <greedy.h>
+#include <vns.h>
 
 // Function declarations
 double second();
@@ -55,7 +56,10 @@ int main(int argc, char **argv) {
             }
             break;
         case 2:
-            // VNS
+            if (VERBOSE >= 1) { printf("Running Variable Neighborhood Search (VNS)...\n"); }
+            if (vns(&inst)) {
+                print_error("Error in vns\n");
+            }
             break;
         case 3:
             // Tabu Search

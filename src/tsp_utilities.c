@@ -121,6 +121,8 @@ void parse_command_line(int argc, char** argv, instance *inst) {
     inst->points = NULL;
     inst->best_sol = NULL;
     inst->best_cost = INF_COST;
+    inst->best_cost_history = NULL;
+    inst->history_size = 0;
     
     int help = 0; if ( argc < 1 ) help = 1;// if no parameters, print help
     int node_flag = 1, number_nodes = 0;
