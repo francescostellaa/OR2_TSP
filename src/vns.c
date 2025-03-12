@@ -1,13 +1,14 @@
 #include <vns.h>
 
 int vns(instance* inst) {
-
+    inst->tstart = second();
+    if (VERBOSE >= 1000) { printf("Time start: %lf\n", inst->tstart); }
     greedy(0, inst, 0);
 
     int max_iterations = 100;
     int iteration = 0;
-    int k = 2;
-    int k_max = 3;
+    int k = 2; // 2-opt neighborhood
+    int k_max = 3;  // N-opt neighborhood
     int n = inst->nnodes;
     inst->best_cost_history = (double*)malloc(max_iterations * sizeof(double));
 
@@ -26,6 +27,7 @@ int vns(instance* inst) {
         }
 
         two_opt(inst->best_sol, inst);
+        
 
         if (inst->history_size == 0 || inst->best_cost < inst->best_cost_history[inst->history_size - 1]){
             inst->best_cost_history[inst->history_size++] = inst->best_cost;

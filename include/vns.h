@@ -8,4 +8,4 @@
 
 int vns(instance* inst);
 
-#endif // VNS
+#endif // VNS_H
