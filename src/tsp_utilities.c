@@ -283,7 +283,7 @@ int check_sol(int* solution, double cost, instance* inst){
  */
 void update_best_sol(instance* inst, int* solution, double cost) {
     if (inst->best_cost > cost) {
-
+        
         if (check_sol(solution, cost, inst)){
             inst->best_cost = cost;
 

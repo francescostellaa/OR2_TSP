@@ -71,41 +71,40 @@ void shake_three_edges(int* solution, instance* inst, int* elements_to_swap){
 
     int* temp_solution = (int*)malloc((inst->nnodes + 1) * sizeof(int));
     memcpy(temp_solution, solution, (inst->nnodes + 1) * sizeof(int));
-    double temp_cost = inst->best_cost;
+    double temp_cost = 0;
     int n = inst->nnodes;
 
     int i = elements_to_swap[0];
     int j = elements_to_swap[1];
     int k = elements_to_swap[2];
 
-    int reconnection = rand() % 1;
-
-    printf("Indices to swap: %d %d %d\n", i, j, k);
+    int reconnection = rand() % 4;
 
     switch (reconnection)
     {
         case 0:
-        printf("Case 0\n");
             reverse_segment(temp_solution, i+1, k);
-            reverse_segment(temp_solution, j+1, i+1);
+            reverse_segment(temp_solution, j+1, k);
+            break;
+        case 1:
+            reverse_segment(temp_solution, j+1, k+1);
+            reverse_segment(temp_solution, i+1, k+1);
             reverse_segment(temp_solution, j+1, k+1);
             break;
-        // case 1:
-        //     reverse_segment(temp_solution, i + 1, j);
-        //     reverse_segment(temp_solution, j + 1, k);
-        //     reverse_segment(temp_solution, i + 1, j);
-        //     break;
-        // case 2:
-        //     reverse_segment(temp_solution, j + 1, k);
-        //     reverse_segment(temp_solution, i + 1, j);
-        //     reverse_segment(temp_solution, j + 1, k);
-        //     break;
-        // case 3:
-        //     reverse_segment(temp_solution, i + 1, k);
-        //     reverse_segment(temp_solution, j + 1, k);
-        //     reverse_segment(temp_solution, i + 1, j);
-        //     break;
+        case 2:
+            reverse_segment(temp_solution, i+1, k);
+            reverse_segment(temp_solution, i+1, j);
+            break;
+        case 3:
+            reverse_segment(temp_solution, i+1, j);
+            reverse_segment(temp_solution, j+1, k);
+            break;
     
     }
+
+    for (int i = 0; i < inst->nnodes + 1; i++) {
+        temp_cost += inst->cost[temp_solution[i] * n + temp_solution[i+1]];
+    }
+    update_best_sol(inst, temp_solution, temp_cost);
 
 }
