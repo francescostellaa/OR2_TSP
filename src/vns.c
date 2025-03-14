@@ -58,6 +58,11 @@ int vns(instance* inst) {
                 k = 2;
             }
         }
+
+        save_history_incumbent(inst->num_iterations, inst->best_cost);
+        inst->num_iterations++;
+
+        // ADD HERE FUNCTION TO SAVE PREV COST IN TXT FILE
         prev_cost = current_cost;
 
     }
