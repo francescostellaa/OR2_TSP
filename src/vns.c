@@ -29,11 +29,13 @@ int vns(instance* inst) {
             int* indices_to_kick = (int*)malloc(k_max * sizeof(int));
 
             if (k == 3) {
-                indices_to_kick[0] = rand() % (n - 3);
-                indices_to_kick[1] = indices_to_kick[0] + 1 + (rand() % (n - indices_to_kick[0] - 3));
-                indices_to_kick[2] = indices_to_kick[1] + 1 + (rand() % (n - indices_to_kick[1] - 2));
+                for (int i = 0; i < 5; i++) {
+                    indices_to_kick[0] = rand() % (n - 3);
+                    indices_to_kick[1] = indices_to_kick[0] + 1 + (rand() % (n - indices_to_kick[0] - 3));
+                    indices_to_kick[2] = indices_to_kick[1] + 1 + (rand() % (n - indices_to_kick[1] - 2));
 
-                shake_three_edges(temp_sol, inst, indices_to_kick);
+                    shake_three_edges(temp_sol, inst, indices_to_kick);
+                }
             } 
             // else if (k > 3) {
             //     // Implement other neighborhoods here

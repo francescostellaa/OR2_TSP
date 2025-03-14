@@ -257,6 +257,7 @@ int check_sol(int* solution, double cost, instance* inst){
     for (int i = 0; i < n; i++){
         if (count[i] != 1){
             if ( VERBOSE >= 1000 ) { printf("Node %d appears %d times in the solution\n", i, count[i]); }
+            free(count);
             return 0;
         }
     }
@@ -292,11 +293,8 @@ void update_best_sol(instance* inst, int* solution, double cost) {
             for (int i = 0; i < inst->nnodes + 1; i++) {
                 inst->best_sol[i] = solution[i];
             }
-
         }
-
     }
-    
 }
 
 /**
@@ -363,8 +361,6 @@ void plot_solution(instance *inst, int* solution) {
 
     fflush(gnuplot);
     pclose(gnuplot);  // Close Gnuplot properly
-
-    return;
 }
 
 /**
@@ -388,6 +384,9 @@ void save_history_incumbent(int num_iterations, double best_cost) {
     fclose(file); 
 }
 
+/**
+ * Plot the evolution of the incumbent solution for the TSP
+ */
 void plot_incumbent() {
     FILE *gnuplot = popen("gnuplot -persist", "w");  // Open Gnuplot
     if (gnuplot == NULL) { 

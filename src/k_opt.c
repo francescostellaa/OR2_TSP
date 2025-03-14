@@ -10,9 +10,7 @@ void two_opt(int* solution, instance* inst) {
     int n = inst->nnodes;
 
     int improvement = 1;
-
     while (improvement) {
-        printf("2-opt\n");
         if(second() - inst->tstart > inst->timelimit) {
             if ( VERBOSE >= 100 ) { printf("Time limit reached\n"); }
             break;
@@ -29,7 +27,6 @@ void two_opt(int* solution, instance* inst) {
                                inst->cost[temp_solution[i + 1] * n + temp_solution[j + 1]] -
                                inst->cost[temp_solution[i] * n + temp_solution[i + 1]] -
                                inst->cost[temp_solution[j] * n + temp_solution[j + 1]];
-
                 if (delta < best_delta) {
                     best_delta = delta;
                     best_i = i;
@@ -37,7 +34,7 @@ void two_opt(int* solution, instance* inst) {
                 }
             }
         }
-                
+
         if (best_delta + EPS_COST < 0) {
             // Perform the 2-opt swap
             int i = best_i+1;
@@ -50,14 +47,15 @@ void two_opt(int* solution, instance* inst) {
             temp_cost += best_delta;
             improvement = 1;
         }
-
     }
     update_best_sol(inst, temp_solution, temp_cost);
 
     free(temp_solution);
 }
 
-
+/**
+ * Reverse the segment between start and end in the solution
+ */
 void reverse_segment(int* sol, int start, int end) {
     while (start < end) {
         swap(sol, start, end);
@@ -66,11 +64,14 @@ void reverse_segment(int* sol, int start, int end) {
     }
 }
 
+/**
+ * Shake the solution by swapping three edges, performing kicks in the solution
+ */
 void shake_three_edges(int* solution, instance* inst, int* elements_to_swap){
 
     int* temp_solution = (int*)malloc((inst->nnodes + 1) * sizeof(int));
     memcpy(temp_solution, solution, (inst->nnodes + 1) * sizeof(int));
-    int n = inst->nnodes;
+    //int n = inst->nnodes;
 
     int i = elements_to_swap[0];
     int j = elements_to_swap[1];
@@ -97,7 +98,8 @@ void shake_three_edges(int* solution, instance* inst, int* elements_to_swap){
             reverse_segment(temp_solution, i+1, j);
             reverse_segment(temp_solution, j+1, k);
             break;
-    
+        default:
+            break;
     }
 
     double temp_cost = compute_solution_cost(temp_solution, inst);
@@ -107,7 +109,5 @@ void shake_three_edges(int* solution, instance* inst, int* elements_to_swap){
         }
 
     }
-
     free(temp_solution);
-
 }

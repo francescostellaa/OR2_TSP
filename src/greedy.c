@@ -37,16 +37,21 @@ int greedy(int initial_point, instance* inst, int run_2opt){
     update_best_sol(inst, solution, new_cost);
     
     if (run_2opt){
-        two_opt(inst->best_sol, inst);
+        two_opt(solution, inst);
     }
     
     free(solution);
 
     return 0;
-
 }
 
-
+/**
+ * Multi-start greedy algorithm to solve the TSP
+ * repeated greedy algorithm with different initial points
+ * @param initial_point initial point to start the greedy algorithm
+ * @param inst instance with the nodes
+ * @param run_2opt flag to run the 2-opt refinement
+ */
 int greedy_multi_start(instance* inst) {
 
     inst->tstart = second();
@@ -54,15 +59,14 @@ int greedy_multi_start(instance* inst) {
 
     int n = inst->nnodes;
 
-    for (int i = 0; i < n; i++) {
+    for (int i = 1; i < n; i++) {
+        //printf("Node %d\n", i);
         if(second() - inst->tstart > inst->timelimit) {
             if ( VERBOSE >= 100 ) { printf("Time limit reached\n"); }
             break;
         }
-        if (greedy(i, inst, 1)){
-            print_error("Error in greedy algorithm");
-        }
-        printf("Iteration: %d, Best Cost: %.6f\n", inst->num_iterations, inst->best_cost);
+        greedy(i, inst, 1);
+        //printf("Iteration: %d, Best Cost: %.6f\n", inst->num_iterations, inst->best_cost);
         save_history_incumbent(inst->num_iterations, inst->best_cost);
         inst->num_iterations++;
     }
@@ -70,6 +74,7 @@ int greedy_multi_start(instance* inst) {
     plot_solution(inst, inst->best_sol);
     plot_incumbent();
     if(VERBOSE >= 1) { printf("Best cost: %lf\n", inst->best_cost); }
+
 
     return 0;
 }
