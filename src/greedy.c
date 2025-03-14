@@ -61,10 +61,14 @@ int greedy_multi_start(instance* inst) {
         }
         if (greedy(i, inst, 1)){
             print_error("Error in greedy algorithm");
-        };
+        }
+        printf("Iteration: %d, Best Cost: %.6f\n", inst->num_iterations, inst->best_cost);
+        save_history_incumbent(inst->num_iterations, inst->best_cost);
+        inst->num_iterations++;
     }
 
     plot_solution(inst, inst->best_sol);
+    plot_incumbent();
     if(VERBOSE >= 1) { printf("Best cost: %lf\n", inst->best_cost); }
 
     return 0;

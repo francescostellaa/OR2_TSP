@@ -121,8 +121,7 @@ void parse_command_line(int argc, char** argv, instance *inst) {
     inst->points = NULL;
     inst->best_sol = NULL;
     inst->best_cost = INF_COST;
-    inst->best_cost_history = NULL;
-    inst->history_size = 0;
+    inst->num_iterations = 0;
     
     int help = 0; if ( argc < 1 ) help = 1;// if no parameters, print help
     int node_flag = 1, number_nodes = 0;
@@ -262,6 +261,8 @@ int check_sol(int* solution, double cost, instance* inst){
         }
     }
 
+    free(count);
+
     double total_cost = 0;
     for (int i = 0; i < n; i++){
         total_cost += inst->cost[solution[i] * n + solution[i+1]];
@@ -282,6 +283,7 @@ int check_sol(int* solution, double cost, instance* inst){
  * @param cost cost of the solution
  */
 void update_best_sol(instance* inst, int* solution, double cost) {
+
     if (inst->best_cost > cost) {
         
         if (check_sol(solution, cost, inst)){
@@ -294,6 +296,21 @@ void update_best_sol(instance* inst, int* solution, double cost) {
         }
 
     }
+    
+}
+
+/**
+ * Compute the cost of a solution
+ * @param solution array with the solution
+ * @param inst instance with the solution
+ * @return cost of the solution
+ */
+double compute_solution_cost(int* solution, instance* inst) {
+    double cost = 0.0;
+    for (int i = 0; i < inst->nnodes; i++) {
+        cost += inst->cost[solution[i] * inst->nnodes + solution[i + 1]];
+    }
+    return cost;
 }
 
 /**
@@ -327,7 +344,7 @@ void plot_solution(instance *inst, int* solution) {
     fprintf(gnuplot, "set title 'TSP Solution' font 'Helvetica,16\n");
 
     // Define the style
-    fprintf(gnuplot, "set style line 1 lc rgb '#FF0000' lt 1 lw 2 pt 7 ps 2\n");
+    fprintf(gnuplot, "set style line 1 lc rgb '#FF0000' lt 1 lw 2 pt 7 ps 1.5\n");
 
     // Plot command
     fprintf(gnuplot, "plot '-' with linespoints ls 1 title 'TSP solution'\n");
@@ -349,3 +366,79 @@ void plot_solution(instance *inst, int* solution) {
 
     return;
 }
+
+/**
+ * Save the history of the incumbent solution
+ * @param num_iterations number of iterations
+ * @param best_cost cost of the best solution
+ */
+void save_history_incumbent(int num_iterations, double best_cost) {
+    FILE *file = NULL;
+    if (num_iterations == 0){
+        file = fopen("../data/incumbent.txt", "w"); 
+    } else {
+        file = fopen("../data/incumbent.txt", "a");
+    }
+    if (file == NULL) {
+        perror("Error opening file");
+        return;
+    }
+
+    fprintf(file, "%d %.6f\n", num_iterations, best_cost); 
+    fclose(file); 
+}
+
+void plot_incumbent() {
+    FILE *gnuplot = popen("gnuplot -persist", "w");  // Open Gnuplot
+    if (gnuplot == NULL) { 
+        printf("Error opening gnuplot\n");
+        return;
+    }
+
+    // Set up Gnuplot settings
+    fprintf(gnuplot, "set terminal pngcairo enhanced color font 'Helvetica,12'\n");  
+    fprintf(gnuplot, "set output '../data/solution_evolution.png'\n");
+    fprintf(gnuplot, "set title 'Evolution of Best Solution' font 'Helvetica,16'\n");
+    
+    fprintf(gnuplot, "set xlabel 'Iteration'\n");
+    fprintf(gnuplot, "set ylabel 'Best Cost'\n");
+    fprintf(gnuplot, "set grid\n");
+
+    // Define the style for the plot
+    fprintf(gnuplot, "set style line 1 lc rgb '#FF0000' lt 1 lw 2 pt 7 ps 1.5\n");
+
+    // Plot command, reading from the file
+    fprintf(gnuplot, "plot '../data/incumbent.txt' using 1:2 with lines ls 1 title 'Best Cost'\n");
+
+    fflush(gnuplot);
+    pclose(gnuplot);  // Close Gnuplot properly
+}
+
+// void plot_solution_evolution() {
+//     FILE *gnuplot = popen("gnuplot -persist", "w");
+//     if (gnuplot == NULL) { 
+//         printf("Error opening gnuplot\n");
+//         return;
+//     }
+
+//     // Set up Gnuplot settings
+//     fprintf(gnuplot, "set terminal pngcairo enhanced color font 'Helvetica,12'\n");  
+//     fprintf(gnuplot, "set output 'solution_evolution.png'\n");
+//     fprintf(gnuplot, "set title 'Evolution of Best Solution' font 'Helvetica,16'\n");
+//     fprintf(gnuplot, "set xlabel 'Iteration'\n");
+//     fprintf(gnuplot, "set ylabel 'Best Cost'\n");
+//     fprintf(gnuplot, "set grid\n");
+
+//     // Use correct variables from the stats command
+//     fprintf(gnuplot, "stats 'solution_evolution.txt' using 1 nooutput\n");
+//     fprintf(gnuplot, "set xrange [STATS_min_x:STATS_max_x]\n");
+
+//     // Define the style for the plot
+//     fprintf(gnuplot, "set style line 1 lc rgb '#FF0000' lt 1 lw 2 pt 7 ps 1.5\n");
+
+//     // Plot command
+//     fprintf(gnuplot, "plot 'solution_evolution.txt' using 1:2 with lines ls 1 title 'Best Cost'\n");
+
+//     fflush(gnuplot);
+//     pclose(gnuplot);
+// }

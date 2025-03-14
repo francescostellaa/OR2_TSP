@@ -3,37 +3,52 @@
 int vns(instance* inst) {
     inst->tstart = second();
     if (VERBOSE >= 1000) { printf("Time start: %lf\n", inst->tstart); }
-    greedy(0, inst, 0);
 
-    int max_iterations = 5000;
+    int n = inst->nnodes;
+    greedy(rand() % n, inst, 0);
+
     int iteration = 0;
     int k = 2; // 2-opt neighborhood
     int k_max = 3;  // N-opt neighborhood
-    int n = inst->nnodes;
-    inst->best_cost_history = (double*)malloc(max_iterations * sizeof(double));
 
-    while (iteration < max_iterations){
-        iteration++;
+    int* temp_sol = (int*)malloc((n+1) * sizeof(int));
+    memcpy(temp_sol, inst->best_sol, (n+1) * sizeof(int));
+    double prev_cost = inst->best_cost;
 
-        if (k > 2){
-            for (int i = 0; i < 3; i++){
-                int* indices_to_kick = (int*)malloc(k_max * sizeof(int));
-                indices_to_kick[0] = rand() % (n - 2);
-                indices_to_kick[1] = indices_to_kick[0] + 1 + (rand() % (n - indices_to_kick[0] - 2));
-                indices_to_kick[2] = indices_to_kick[1] + 1 + (rand() % (n - indices_to_kick[1] - 1));
+    while (iteration < MAX_ITERATIONS_VNS){
 
-                shake_three_edges(inst->best_sol, inst, indices_to_kick);
-
-                free(indices_to_kick);
-            }
+        if (second() - inst->tstart > inst->timelimit) {
+            if (VERBOSE >= 100) { printf("Time limit reached\n"); }
+            break;
         }
 
-        two_opt(inst->best_sol, inst);
-        
+        iteration++;
 
-        if (inst->history_size == 0 || inst->best_cost < inst->best_cost_history[inst->history_size - 1]){
-            inst->best_cost_history[inst->history_size++] = inst->best_cost;
-            k = 2;
+        // Shaking (changing neighborhood)
+        if (k > 2){
+            int* indices_to_kick = (int*)malloc(k_max * sizeof(int));
+
+            if (k == 3) {
+                indices_to_kick[0] = rand() % (n - 3);
+                indices_to_kick[1] = indices_to_kick[0] + 1 + (rand() % (n - indices_to_kick[0] - 3));
+                indices_to_kick[2] = indices_to_kick[1] + 1 + (rand() % (n - indices_to_kick[1] - 2));
+
+                shake_three_edges(temp_sol, inst, indices_to_kick);
+            } 
+            // else if (k > 3) {
+            //     // Implement other neighborhoods here
+            // }
+            
+            free(indices_to_kick);
+        } else {
+            // Local search
+            two_opt(temp_sol, inst);
+        }
+
+        double current_cost = compute_solution_cost(temp_sol, inst);
+        
+        if (current_cost < prev_cost){
+            k = 2;  
         }
         else {
             k++;
@@ -41,11 +56,15 @@ int vns(instance* inst) {
                 k = 2;
             }
         }
+        prev_cost = current_cost;
 
     }
 
     plot_solution(inst, inst->best_sol);
+    plot_incumbent();
     if(VERBOSE >= 1) { printf("Best cost: %lf\n", inst->best_cost); }
+
+    free(temp_sol);
 
     return 0;
 }

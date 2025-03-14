@@ -36,8 +36,8 @@ typedef struct {
     double* cost;
     int* best_sol;
     double best_cost;
-    double* best_cost_history;
-    int history_size;
+
+    int num_iterations;
 
     double timelimit;
     double tstart;
@@ -58,5 +58,8 @@ double dist(int i, int j, instance *inst);
 double dist2(int i, int j, instance *inst);
 void swap(int* arr, int i, int j);
 void two_opt(int* solution, instance* inst);
+double compute_solution_cost(int* solution, instance* inst);
+void save_history_incumbent(int num_iterations, double best_cost);
+void plot_incumbent();
 
 #endif // TSP_UTILITIES_H

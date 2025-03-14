@@ -6,13 +6,13 @@
 void two_opt(int* solution, instance* inst) {
     int* temp_solution = (int*)malloc((inst->nnodes + 1) * sizeof(int));
     memcpy(temp_solution, solution, (inst->nnodes + 1) * sizeof(int));
-    double temp_cost = inst->best_cost;
+    double temp_cost = compute_solution_cost(temp_solution, inst);
     int n = inst->nnodes;
 
     int improvement = 1;
 
     while (improvement) {
-
+        printf("2-opt\n");
         if(second() - inst->tstart > inst->timelimit) {
             if ( VERBOSE >= 100 ) { printf("Time limit reached\n"); }
             break;
@@ -38,7 +38,7 @@ void two_opt(int* solution, instance* inst) {
             }
         }
                 
-        if (best_delta < -EPS_COST) {
+        if (best_delta + EPS_COST < 0) {
             // Perform the 2-opt swap
             int i = best_i+1;
             int j = best_j;
@@ -52,7 +52,6 @@ void two_opt(int* solution, instance* inst) {
         }
 
     }
-
     update_best_sol(inst, temp_solution, temp_cost);
 
     free(temp_solution);
@@ -71,7 +70,6 @@ void shake_three_edges(int* solution, instance* inst, int* elements_to_swap){
 
     int* temp_solution = (int*)malloc((inst->nnodes + 1) * sizeof(int));
     memcpy(temp_solution, solution, (inst->nnodes + 1) * sizeof(int));
-    double temp_cost = 0;
     int n = inst->nnodes;
 
     int i = elements_to_swap[0];
@@ -102,9 +100,14 @@ void shake_three_edges(int* solution, instance* inst, int* elements_to_swap){
     
     }
 
-    for (int i = 0; i < inst->nnodes + 1; i++) {
-        temp_cost += inst->cost[temp_solution[i] * n + temp_solution[i+1]];
+    double temp_cost = compute_solution_cost(temp_solution, inst);
+    if (check_sol(temp_solution, temp_cost, inst)){
+        for (int i = 0; i < inst->nnodes + 1; i++) {
+            solution[i] = temp_solution[i];
+        }
+
     }
-    update_best_sol(inst, temp_solution, temp_cost);
+
+    free(temp_solution);
 
 }

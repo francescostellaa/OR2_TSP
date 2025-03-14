@@ -6,6 +6,8 @@
 #include <chrono.h>
 #include <greedy.h>
 
+#define MAX_ITERATIONS_VNS 250
+
 int vns(instance* inst);
 
 #endif // VNS_H
