@@ -26,27 +26,23 @@ int vns(instance* inst) {
 
         // Shaking (changing neighborhood)
         if (k > 1){
-            int* indices_to_kick = (int*)malloc(k_max * sizeof(int));
+            int* indices_to_kick = (int*)malloc(5 * sizeof(int));
 
             if (k == 2) {
-                for (int i = 0; i < k_max; i++) {
-                    indices_to_kick[0] = rand() % (n - 3);
-                    indices_to_kick[1] = indices_to_kick[0] + 1 + (rand() % (n - indices_to_kick[0] - 3));
-                    indices_to_kick[2] = indices_to_kick[1] + 1 + (rand() % (n - indices_to_kick[1] - 2));
-                    
-                    shake_three_edges(temp_sol, inst, indices_to_kick); // 3-opt neighborhood
-                }
+                indices_to_kick[0] = rand() % (n - 3);
+                indices_to_kick[1] = indices_to_kick[0] + 1 + (rand() % (n - indices_to_kick[0] - 3));
+                indices_to_kick[2] = indices_to_kick[1] + 1 + (rand() % (n - indices_to_kick[1] - 2));
+                
+                shake_three_edges(temp_sol, inst, indices_to_kick); // 3-opt neighborhood
             } 
             else if (k > 2) {
-                for (int i = 0; i < k_max; i++) {
-                    indices_to_kick[0] = rand() % (n - 5);
-                    indices_to_kick[1] = indices_to_kick[0] + 1 + (rand() % (n - indices_to_kick[0] - 5));
-                    indices_to_kick[2] = indices_to_kick[1] + 1 + (rand() % (n - indices_to_kick[1] - 4));
-                    indices_to_kick[3] = indices_to_kick[2] + 1 + (rand() % (n - indices_to_kick[2] - 3));
-                    indices_to_kick[4] = indices_to_kick[3] + 1 + (rand() % (n - indices_to_kick[3] - 2));
+                indices_to_kick[0] = rand() % (n - 5);
+                indices_to_kick[1] = indices_to_kick[0] + 1 + (rand() % (n - indices_to_kick[0] - 5));
+                indices_to_kick[2] = indices_to_kick[1] + 1 + (rand() % (n - indices_to_kick[1] - 4));
+                indices_to_kick[3] = indices_to_kick[2] + 1 + (rand() % (n - indices_to_kick[2] - 3));
+                indices_to_kick[4] = indices_to_kick[3] + 1 + (rand() % (n - indices_to_kick[3] - 2));
 
-                    shake_five_edges(temp_sol, inst, indices_to_kick); // 5-opt neighborhood
-                }
+                shake_five_edges(temp_sol, inst, indices_to_kick); // 5-opt neighborhood
             }
             
             free(indices_to_kick);
