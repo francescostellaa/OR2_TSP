@@ -95,7 +95,7 @@ void read_input(instance *inst) {
             continue;
         }
 
-        if ( VERBOSE >= 1000 ) { (" Final active section: %d\n", active_section); }
+        if ( VERBOSE >= 1000 ) { printf("Final active section: %d\n", active_section); }
         print_error("Wrong format for the current parser!\n");
 
     }
@@ -121,8 +121,7 @@ void parse_command_line(int argc, char** argv, instance *inst) {
     inst->points = NULL;
     inst->best_sol = NULL;
     inst->best_cost = INF_COST;
-    inst->num_iterations = 0;
-    
+
     int help = 0; if ( argc < 1 ) help = 1;// if no parameters, print help
     int node_flag = 1, number_nodes = 0;
 	for ( int i = 1; i < argc; i++ ) { 
@@ -185,8 +184,6 @@ void random_instance_generator(instance *inst) {
         inst->points[i].x = random01() * MAX_BOUNDARY;
         inst->points[i].y = random01() * MAX_BOUNDARY;
     }
-    
-    return;
 }
 
 /**
@@ -365,30 +362,95 @@ void plot_solution(instance *inst, int* solution) {
 
 /**
  * Save the history of the incumbent solution
- * @param num_iterations number of iterations
  * @param best_cost cost of the best solution
  */
-void save_history_incumbent(int num_iterations, double best_cost) {
+void save_history_incumbent(double best_cost) {
+    static int first_call = 0;
+    static int iteration_counter = 0;
+
     FILE *file = NULL;
-    if (num_iterations == 0){
-        file = fopen("../data/incumbent.txt", "w"); 
+
+    // First call: erase file contents
+    if (!first_call) {
+        file = fopen("../data/incumbent.txt", "w");
+        first_call = 1;
     } else {
         file = fopen("../data/incumbent.txt", "a");
     }
+
     if (file == NULL) {
         perror("Error opening file");
         return;
     }
 
-    fprintf(file, "%d %.6f\n", num_iterations, best_cost); 
-    fclose(file); 
+    // Write current iteration and best cost to file
+    fprintf(file, "%d %.6f\n", iteration_counter++, best_cost);
+    fclose(file);
+}
+
+
+/**
+ * Save the history of the cost
+ * @param cost cost of the solution
+ */
+void save_history_cost(double cost) {
+    static int first_call = 0;
+    static int iteration_counter = 0;
+
+    FILE *file;
+
+    // First time opening the file, erase its content
+    if (!first_call) {
+        file = fopen("../data/cost.txt", "w");
+        first_call = 1;
+    } else {
+        file = fopen("../data/cost.txt", "a");
+    }
+
+    if (file == NULL) {
+        perror("Error opening file");
+        return;
+    }
+
+    // Compute new index and write to file
+    fprintf(file, "%d %.6f\n", iteration_counter++, cost);
+    fclose(file);
+}
+
+/**
+ * Plot the history of the cost
+ */
+void plot_history_cost() {
+    FILE *gnuplot = popen("gnuplot -persist", "w");
+    if (gnuplot == NULL) {
+        printf("Error opening gnuplot\n");
+        return;
+    }
+
+    // Set up Gnuplot settings
+    fprintf(gnuplot, "set terminal pngcairo enhanced color font 'Helvetica,12'\n");
+    fprintf(gnuplot, "set output '../data/cost_evolution.png'\n");
+    fprintf(gnuplot, "set title 'Evolution of Best Solution' font 'Helvetica,16'\n");
+
+    fprintf(gnuplot, "set xlabel 'Iteration'\n");
+    fprintf(gnuplot, "set ylabel 'Cost'\n");
+    fprintf(gnuplot, "set grid\n");
+
+    // Define the style for the plot
+    fprintf(gnuplot, "set style line 1 lc rgb '#FF0000' lt 1 lw 2 pt 7 ps 1.5\n");
+
+    // Plot command, reading from the file
+    fprintf(gnuplot, "plot '../data/cost.txt' using 1:2 with lines ls 1 title 'Cost evolution'\n");
+
+    fflush(gnuplot);
+    pclose(gnuplot);
 }
 
 /**
  * Plot the evolution of the incumbent solution for the TSP
  */
 void plot_incumbent() {
-    FILE *gnuplot = popen("gnuplot -persist", "w");  // Open Gnuplot
+    FILE *gnuplot = popen("gnuplot -persist", "w");
     if (gnuplot == NULL) { 
         printf("Error opening gnuplot\n");
         return;
