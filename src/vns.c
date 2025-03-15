@@ -52,7 +52,7 @@ int vns(instance* inst) {
         }
 
         double current_cost = compute_solution_cost(temp_sol, inst);
-        
+
         if (current_cost < prev_cost){
             k = 1;  
         }
@@ -63,9 +63,8 @@ int vns(instance* inst) {
             }
         }
 
-        save_history_incumbent(inst->num_iterations, inst->best_cost);
-        inst->num_iterations++;
-
+        save_history_incumbent(inst->best_cost);
+        save_history_cost(current_cost);
         // ADD HERE FUNCTION TO SAVE PREV COST IN TXT FILE
         prev_cost = current_cost;
 
@@ -73,6 +72,7 @@ int vns(instance* inst) {
 
     plot_solution(inst, inst->best_sol);
     plot_incumbent();
+    plot_history_cost();
     if(VERBOSE >= 1) { printf("Best cost: %lf\n", inst->best_cost); }
 
     free(temp_sol);

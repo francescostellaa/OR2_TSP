@@ -3,8 +3,6 @@
 #include <greedy.h>
 #include <vns.h>
 
-// Function declarations
-double second();
 
 void print_menu() {
     printf("\nSelect the algorithm to run:\n");

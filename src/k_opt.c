@@ -45,6 +45,7 @@ void two_opt(int* solution, instance* inst) {
                 j--;
             }
             temp_cost += best_delta;
+            save_history_cost(temp_cost);
             improvement = 1;
         }
     }
@@ -107,7 +108,6 @@ void shake_three_edges(int* solution, instance* inst, int* elements_to_swap){
         for (int i = 0; i < inst->nnodes + 1; i++) {
             solution[i] = temp_solution[i];
         }
-
     }
     free(temp_solution);
 }

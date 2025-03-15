@@ -33,7 +33,7 @@ int greedy(int initial_point, instance* inst, int run_2opt){
     }
     solution[n] = solution[0];
     new_cost += inst->cost[solution[n-1] * n + solution[n]];
-
+    save_history_cost(new_cost);
     update_best_sol(inst, solution, new_cost);
     
     if (run_2opt){
@@ -66,15 +66,13 @@ int greedy_multi_start(instance* inst) {
             break;
         }
         greedy(i, inst, 1);
-        //printf("Iteration: %d, Best Cost: %.6f\n", inst->num_iterations, inst->best_cost);
-        save_history_incumbent(inst->num_iterations, inst->best_cost);
-        inst->num_iterations++;
+        save_history_incumbent(inst->best_cost);
     }
 
     plot_solution(inst, inst->best_sol);
     plot_incumbent();
+    plot_history_cost();
     if(VERBOSE >= 1) { printf("Best cost: %lf\n", inst->best_cost); }
-
 
     return 0;
 }
