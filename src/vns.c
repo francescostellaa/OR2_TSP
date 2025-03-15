@@ -29,26 +29,31 @@ int vns(instance* inst) {
             int* indices_to_kick = (int*)malloc(k_max * sizeof(int));
 
             if (k == 2) {
-                indices_to_kick[0] = rand() % (n - 3);
-                indices_to_kick[1] = indices_to_kick[0] + 1 + (rand() % (n - indices_to_kick[0] - 3));
-                indices_to_kick[2] = indices_to_kick[1] + 1 + (rand() % (n - indices_to_kick[1] - 2));
-                
-                shake_three_edges(temp_sol, inst, indices_to_kick); // 3-opt neighborhood
+                for (int i = 0; i < k_max; i++) {
+                    indices_to_kick[0] = rand() % (n - 3);
+                    indices_to_kick[1] = indices_to_kick[0] + 1 + (rand() % (n - indices_to_kick[0] - 3));
+                    indices_to_kick[2] = indices_to_kick[1] + 1 + (rand() % (n - indices_to_kick[1] - 2));
+                    
+                    shake_three_edges(temp_sol, inst, indices_to_kick); // 3-opt neighborhood
+                }
             } 
             else if (k > 2) {
-                indices_to_kick[0] = rand() % (n - 5);
-                indices_to_kick[1] = indices_to_kick[0] + 1 + (rand() % (n - indices_to_kick[0] - 5));
-                indices_to_kick[2] = indices_to_kick[1] + 1 + (rand() % (n - indices_to_kick[1] - 4));
-                indices_to_kick[3] = indices_to_kick[2] + 1 + (rand() % (n - indices_to_kick[2] - 3));
-                indices_to_kick[4] = indices_to_kick[3] + 1 + (rand() % (n - indices_to_kick[3] - 2));
+                for (int i = 0; i < k_max; i++) {
+                    indices_to_kick[0] = rand() % (n - 5);
+                    indices_to_kick[1] = indices_to_kick[0] + 1 + (rand() % (n - indices_to_kick[0] - 5));
+                    indices_to_kick[2] = indices_to_kick[1] + 1 + (rand() % (n - indices_to_kick[1] - 4));
+                    indices_to_kick[3] = indices_to_kick[2] + 1 + (rand() % (n - indices_to_kick[2] - 3));
+                    indices_to_kick[4] = indices_to_kick[3] + 1 + (rand() % (n - indices_to_kick[3] - 2));
 
-                shake_five_edges(temp_sol, inst, indices_to_kick); // 5-opt neighborhood
+                    shake_five_edges(temp_sol, inst, indices_to_kick); // 5-opt neighborhood
+                }
             }
             
             free(indices_to_kick);
         } else {
             // Local search
             two_opt(temp_sol, inst);
+            memcpy(temp_sol, inst->best_sol, (n+1) * sizeof(int));
         }
 
         double current_cost = compute_solution_cost(temp_sol, inst);
@@ -64,7 +69,7 @@ int vns(instance* inst) {
         }
 
         save_history_incumbent(inst->best_cost);
-        save_history_cost(current_cost);
+        save_history_cost(prev_cost);
         prev_cost = current_cost;
 
     }

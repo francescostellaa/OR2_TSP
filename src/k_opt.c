@@ -45,7 +45,6 @@ void two_opt(int* solution, instance* inst) {
                 j--;
             }
             temp_cost += best_delta;
-            save_history_cost(temp_cost);
             improvement = 1;
         }
     }
