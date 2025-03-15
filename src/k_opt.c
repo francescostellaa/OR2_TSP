@@ -111,3 +111,55 @@ void shake_three_edges(int* solution, instance* inst, int* elements_to_swap){
     }
     free(temp_solution);
 }
+
+
+/**
+ * Shake the solution by swapping five edges, performing kicks in the solution
+ */
+void shake_five_edges(int* solution, instance* inst, int* elements_to_swap){
+
+    int* temp_solution = (int*)malloc((inst->nnodes + 1) * sizeof(int));
+    memcpy(temp_solution, solution, (inst->nnodes + 1) * sizeof(int));
+
+    int i = elements_to_swap[0];
+    int j = elements_to_swap[1];
+    int k = elements_to_swap[2];
+    int l = elements_to_swap[3];
+    int m = elements_to_swap[4];
+    
+    int reconnection = rand() % 3;
+
+    switch (reconnection)
+    {
+        case 0:
+            reverse_segment(temp_solution, j+1, m);
+            reverse_segment(temp_solution, i+1, l);
+            reverse_segment(temp_solution, i+1, j);
+            reverse_segment(temp_solution, j+1, l);
+            reverse_segment(temp_solution, k+1, l);
+            break;
+        case 1:
+            reverse_segment(temp_solution, i+1, k);
+            reverse_segment(temp_solution, i+1, j);
+            reverse_segment(temp_solution, j+1, k);
+            reverse_segment(temp_solution, k+1, m);
+            reverse_segment(temp_solution, k+1, l);
+            break;
+        case 2:
+            reverse_segment(temp_solution, i+1, k);
+            reverse_segment(temp_solution, j+1, m);
+            reverse_segment(temp_solution, j+1, k);
+            break;
+        default:
+            break;
+    }
+
+    double temp_cost = compute_solution_cost(temp_solution, inst);
+    if (check_sol(temp_solution, temp_cost, inst)){
+        for (int i = 0; i < inst->nnodes + 1; i++) {
+            solution[i] = temp_solution[i];
+        }
+
+    }
+    free(temp_solution);
+}

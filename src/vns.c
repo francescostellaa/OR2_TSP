@@ -8,8 +8,8 @@ int vns(instance* inst) {
     greedy(rand() % n, inst, 0);
 
     int iteration = 0;
-    int k = 2; // 2-opt neighborhood
-    int k_max = 3;  // N-opt neighborhood
+    int k = 1; 
+    int k_max = 3;  
 
     int* temp_sol = (int*)malloc((n+1) * sizeof(int));
     memcpy(temp_sol, inst->best_sol, (n+1) * sizeof(int));
@@ -25,21 +25,25 @@ int vns(instance* inst) {
         iteration++;
 
         // Shaking (changing neighborhood)
-        if (k > 2){
+        if (k > 1){
             int* indices_to_kick = (int*)malloc(k_max * sizeof(int));
 
-            if (k == 3) {
-                for (int i = 0; i < 5; i++) {
-                    indices_to_kick[0] = rand() % (n - 3);
-                    indices_to_kick[1] = indices_to_kick[0] + 1 + (rand() % (n - indices_to_kick[0] - 3));
-                    indices_to_kick[2] = indices_to_kick[1] + 1 + (rand() % (n - indices_to_kick[1] - 2));
-
-                    shake_three_edges(temp_sol, inst, indices_to_kick);
-                }
+            if (k == 2) {
+                indices_to_kick[0] = rand() % (n - 3);
+                indices_to_kick[1] = indices_to_kick[0] + 1 + (rand() % (n - indices_to_kick[0] - 3));
+                indices_to_kick[2] = indices_to_kick[1] + 1 + (rand() % (n - indices_to_kick[1] - 2));
+                
+                shake_three_edges(temp_sol, inst, indices_to_kick); // 3-opt neighborhood
             } 
-            // else if (k > 3) {
-            //     // Implement other neighborhoods here
-            // }
+            else if (k > 2) {
+                indices_to_kick[0] = rand() % (n - 5);
+                indices_to_kick[1] = indices_to_kick[0] + 1 + (rand() % (n - indices_to_kick[0] - 5));
+                indices_to_kick[2] = indices_to_kick[1] + 1 + (rand() % (n - indices_to_kick[1] - 4));
+                indices_to_kick[3] = indices_to_kick[2] + 1 + (rand() % (n - indices_to_kick[2] - 3));
+                indices_to_kick[4] = indices_to_kick[3] + 1 + (rand() % (n - indices_to_kick[3] - 2));
+
+                shake_five_edges(temp_sol, inst, indices_to_kick); // 5-opt neighborhood
+            }
             
             free(indices_to_kick);
         } else {
@@ -50,12 +54,12 @@ int vns(instance* inst) {
         double current_cost = compute_solution_cost(temp_sol, inst);
         
         if (current_cost < prev_cost){
-            k = 2;  
+            k = 1;  
         }
         else {
             k++;
             if (k > k_max){
-                k = 2;
+                k = 1;
             }
         }
 
