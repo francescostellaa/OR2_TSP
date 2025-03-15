@@ -65,7 +65,6 @@ int vns(instance* inst) {
 
         save_history_incumbent(inst->best_cost);
         save_history_cost(current_cost);
-        // ADD HERE FUNCTION TO SAVE PREV COST IN TXT FILE
         prev_cost = current_cost;
 
     }
