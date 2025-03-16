@@ -3,7 +3,7 @@
 /**
  * Apply the 2-opt refinement to the solution
  */
-void two_opt(int* solution, instance* inst) {
+int* two_opt(int* solution, instance* inst) {
     int* temp_solution = (int*)malloc((inst->nnodes + 1) * sizeof(int));
     memcpy(temp_solution, solution, (inst->nnodes + 1) * sizeof(int));
     double temp_cost = compute_solution_cost(temp_solution, inst);
@@ -49,8 +49,7 @@ void two_opt(int* solution, instance* inst) {
         }
     }
     update_best_sol(inst, temp_solution, temp_cost);
-
-    free(temp_solution);
+    return temp_solution;
 }
 
 /**

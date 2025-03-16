@@ -52,8 +52,7 @@ int vns(instance* inst) {
 
         save_history_cost(compute_solution_cost(temp_sol, inst));
 
-        two_opt(temp_sol, inst);
-        memcpy(temp_sol, inst->best_sol, (n+1) * sizeof(int));
+        temp_sol = two_opt(temp_sol, inst);
         current_cost = compute_solution_cost(temp_sol, inst);
 
         if (current_cost < prev_cost){

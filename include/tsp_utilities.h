@@ -55,7 +55,6 @@ void update_best_sol(instance* inst, int* solution, double cost);
 double dist(int i, int j, instance *inst);
 double dist2(int i, int j, instance *inst);
 void swap(int* arr, int i, int j);
-void two_opt(int* solution, instance* inst);
 double compute_solution_cost(int* solution, instance* inst);
 void save_history_incumbent(double best_cost);
 void plot_incumbent();

@@ -5,8 +5,7 @@
 #include <tsp_utilities.h>
 #include <chrono.h>
 #include <greedy.h>
-
-#define MAX_ITERATIONS_VNS 250
+#include <k_opt.h>
 
 int vns(instance* inst);
 
