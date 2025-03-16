@@ -1,5 +1,11 @@
+#include <stdbool.h>
 #include <vns.h>
 
+/**
+ * Implement the Variable Neighborhood Search (VNS) algorithm
+ * @param inst
+ * @return zero on success, non-zero on failures
+ */
 int vns(instance* inst) {
     inst->tstart = second();
     if (VERBOSE >= 1000) { printf("Time start: %lf\n", inst->tstart); }
@@ -15,7 +21,7 @@ int vns(instance* inst) {
     memcpy(temp_sol, inst->best_sol, (n+1) * sizeof(int));
     double prev_cost = inst->best_cost;
 
-    while (iteration < MAX_ITERATIONS_VNS){
+    while (true){
 
         if (second() - inst->tstart > inst->timelimit) {
             if (VERBOSE >= 100) { printf("Time limit reached\n"); }
@@ -34,7 +40,7 @@ int vns(instance* inst) {
                 indices_to_kick[2] = indices_to_kick[1] + 1 + (rand() % (n - indices_to_kick[1] - 2));
                 
                 shake_three_edges(temp_sol, inst, indices_to_kick); // 3-opt neighborhood
-            } 
+            }
             else if (k > 2) {
                 indices_to_kick[0] = rand() % (n - 5);
                 indices_to_kick[1] = indices_to_kick[0] + 1 + (rand() % (n - indices_to_kick[0] - 5));
@@ -44,6 +50,8 @@ int vns(instance* inst) {
 
                 shake_five_edges(temp_sol, inst, indices_to_kick); // 5-opt neighborhood
             }
+            two_opt(temp_sol, inst);
+            memcpy(temp_sol, inst->best_sol, (n+1) * sizeof(int));
             
             free(indices_to_kick);
         } else {

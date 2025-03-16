@@ -3,12 +3,15 @@
 #include <greedy.h>
 #include <vns.h>
 
+#include "grasp.h"
+
 
 void print_menu() {
     printf("\nSelect the algorithm to run:\n");
     printf("1 - Greedy Multi-Start\n");
     printf("2 - Variable Neighborhood Search (VNS)\n");
     printf("3 - Tabu Search\n");
+    printf("4 - Grasp Multi-Start\n");
     printf("Enter your choice: ");
 }
 
@@ -62,8 +65,15 @@ int main(int argc, char **argv) {
         case 3:
             // Tabu Search
             break;
+        case 4:
+            if (VERBOSE >= 1) { printf("Running Grasp Multi-Start...\n"); }
+            if (grasp_multi_start(&inst)) {
+                print_error("Error in grasp_multi_start\n");
+            }
+            break;
         default:
             printf("Invalid choice.\n");
+            printf("HEREEEE");
             break;
     }
     

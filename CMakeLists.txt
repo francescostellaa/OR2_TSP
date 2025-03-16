@@ -30,6 +30,7 @@ add_executable(tsp
     src/greedy.c
     src/k_opt.c
     src/vns.c
+    src/grasp.c
 )
 
 # target_link_libraries( ${PROJECT_NAME} ${OpenCV_LIBS} ${Boost_FILESYSTEM_LIBRARY})
