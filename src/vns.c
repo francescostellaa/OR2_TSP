@@ -23,6 +23,7 @@ int vns(instance* inst) {
 
     while (true){
 
+        double current_cost = 0;
         if (second() - inst->tstart > inst->timelimit) {
             if (VERBOSE >= 100) { printf("Time limit reached\n"); }
             break;
@@ -38,7 +39,7 @@ int vns(instance* inst) {
                 indices_to_kick[0] = rand() % (n - 3);
                 indices_to_kick[1] = indices_to_kick[0] + 1 + (rand() % (n - indices_to_kick[0] - 3));
                 indices_to_kick[2] = indices_to_kick[1] + 1 + (rand() % (n - indices_to_kick[1] - 2));
-                
+                printf("three shake\n" );
                 shake_three_edges(temp_sol, inst, indices_to_kick); // 3-opt neighborhood
             }
             else if (k > 2) {
@@ -47,9 +48,10 @@ int vns(instance* inst) {
                 indices_to_kick[2] = indices_to_kick[1] + 1 + (rand() % (n - indices_to_kick[1] - 4));
                 indices_to_kick[3] = indices_to_kick[2] + 1 + (rand() % (n - indices_to_kick[2] - 3));
                 indices_to_kick[4] = indices_to_kick[3] + 1 + (rand() % (n - indices_to_kick[3] - 2));
-
+                printf("five shake\n" );
                 shake_five_edges(temp_sol, inst, indices_to_kick); // 5-opt neighborhood
             }
+            current_cost = compute_solution_cost(temp_sol, inst);
             two_opt(temp_sol, inst);
             memcpy(temp_sol, inst->best_sol, (n+1) * sizeof(int));
             
@@ -57,10 +59,12 @@ int vns(instance* inst) {
         } else {
             // Local search
             two_opt(temp_sol, inst);
+            printf("Two opt\n");
             memcpy(temp_sol, inst->best_sol, (n+1) * sizeof(int));
+            current_cost = compute_solution_cost(temp_sol, inst);
         }
 
-        double current_cost = compute_solution_cost(temp_sol, inst);
+        //double current_cost = compute_solution_cost(temp_sol, inst);
 
         if (current_cost < prev_cost){
             k = 1;  
