@@ -13,7 +13,6 @@ int vns(instance* inst) {
     int n = inst->nnodes;
     greedy(rand() % n, inst, 0);
 
-    int iteration = 0;
     int k = 1; 
     int k_max = 3;  
 
