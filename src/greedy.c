@@ -48,9 +48,7 @@ int greedy(int initial_point, instance* inst, int run_2opt){
 /**
  * Multi-start greedy algorithm to solve the TSP
  * repeated greedy algorithm with different initial points
- * @param initial_point initial point to start the greedy algorithm
  * @param inst instance with the nodes
- * @param run_2opt flag to run the 2-opt refinement
  */
 int greedy_multi_start(instance* inst, int run_2opt) {
 
@@ -60,7 +58,6 @@ int greedy_multi_start(instance* inst, int run_2opt) {
     int n = inst->nnodes;
 
     for (int i = 1; i < n; i++) {
-        //printf("Node %d\n", i);
         if(second() - inst->tstart > inst->timelimit) {
             if ( VERBOSE >= 100 ) { printf("Time limit reached\n"); }
             break;
