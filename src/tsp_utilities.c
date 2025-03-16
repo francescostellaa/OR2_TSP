@@ -474,3 +474,33 @@ void plot_incumbent() {
     fflush(gnuplot);
     pclose(gnuplot);  // Close Gnuplot properly
 }
+
+void plot_incumbent_and_costs() {
+    FILE *gnuplot = popen("gnuplot -persist", "w");
+    if (gnuplot == NULL) { 
+        printf("Error opening gnuplot\n");
+        return;
+    }
+
+    // Set up Gnuplot settings
+    fprintf(gnuplot, "set terminal pngcairo enhanced color font 'Helvetica,12'\n");  
+    fprintf(gnuplot, "set output '../data/complete_solution_evolution.png'\n");
+    fprintf(gnuplot, "set title 'Evolution of Best Solution' font 'Helvetica,16'\n");
+    
+    fprintf(gnuplot, "set xlabel 'Iteration'\n");
+    fprintf(gnuplot, "set ylabel 'Cost'\n");
+    fprintf(gnuplot, "set grid\n");
+
+    // Define styles
+    fprintf(gnuplot, "set style line 1 lc rgb '#0000FF' lt 1 lw 1 pt 6 ps 1\n");  
+    fprintf(gnuplot, "set style line 2 lc rgb '#FF0000' lt 1 lw 3 pt 7 ps 1.5\n"); 
+
+    // Plot both files
+    fprintf(gnuplot, "plot '../data/cost.txt' using 1:2 with lines ls 1 title 'Cost', \\\n");
+    fprintf(gnuplot, "     '../data/incumbent.txt' using 1:2 with lines ls 2 title 'Best Cost'\n");
+
+    fflush(gnuplot);
+    pclose(gnuplot);
+}
+
+

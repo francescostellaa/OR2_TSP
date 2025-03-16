@@ -61,5 +61,6 @@ void save_history_incumbent(double best_cost);
 void plot_incumbent();
 void save_history_cost(double cost);
 void plot_history_cost();
+void plot_incumbent_and_costs();
 
 #endif // TSP_UTILITIES_H
