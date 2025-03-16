@@ -8,10 +8,11 @@
 
 void print_menu() {
     printf("\nSelect the algorithm to run:\n");
-    printf("1 - Greedy Multi-Start\n");
-    printf("2 - Variable Neighborhood Search (VNS)\n");
-    printf("3 - Tabu Search\n");
-    printf("4 - Grasp Multi-Start\n");
+    printf("1 - Nearest Neighbor\n");
+    printf("2 - Nearest Neighbor + 2-OPT Refinement\n");
+    printf("3 - Variable Neighborhood Search (VNS)\n");
+    printf("4 - Tabu Search\n");
+    printf("5 - Grasp Multi-Start\n");
     printf("Enter your choice: ");
 }
 
@@ -52,20 +53,26 @@ int main(int argc, char **argv) {
     switch (choice) {
         case 1:
             if (VERBOSE >= 1) { printf("Running Greedy Multi-Start...\n"); }
-            if (greedy_multi_start(&inst)) {
+            if (greedy_multi_start(&inst, 0)) {
                 print_error("Error in greedy_multi_start\n");
             }
             break;
         case 2:
+            if (VERBOSE >= 1) { printf("Running Greedy Multi-Start + 2-OPT Refinement...\n"); }
+            if (greedy_multi_start(&inst, 1)) {
+                print_error("Error in greedy_multi_start\n");
+            }
+            break;
+        case 3:
             if (VERBOSE >= 1) { printf("Running Variable Neighborhood Search (VNS)...\n"); }
             if (vns(&inst)) {
                 print_error("Error in vns\n");
             }
             break;
-        case 3:
+        case 4:
             // Tabu Search
             break;
-        case 4:
+        case 5:
             if (VERBOSE >= 1) { printf("Running Grasp Multi-Start...\n"); }
             if (grasp_multi_start(&inst)) {
                 print_error("Error in grasp_multi_start\n");

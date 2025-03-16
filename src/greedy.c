@@ -52,7 +52,7 @@ int greedy(int initial_point, instance* inst, int run_2opt){
  * @param inst instance with the nodes
  * @param run_2opt flag to run the 2-opt refinement
  */
-int greedy_multi_start(instance* inst) {
+int greedy_multi_start(instance* inst, int run_2opt) {
 
     inst->tstart = second();
     if ( VERBOSE >= 1000) { printf("Time start: %lf\n", inst->tstart); }
@@ -65,7 +65,7 @@ int greedy_multi_start(instance* inst) {
             if ( VERBOSE >= 100 ) { printf("Time limit reached\n"); }
             break;
         }
-        greedy(i, inst, 1);
+        greedy(i, inst, run_2opt);
         save_history_incumbent(inst->best_cost);
     }
 
