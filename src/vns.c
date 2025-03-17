@@ -38,15 +38,18 @@ int vns(instance* inst) {
 
             if (k == 2) {
 
-                do {
-                    indices_to_kick[0] = rand() % (n - 3);
-                    indices_to_kick[1] = indices_to_kick[0] + 1 + (rand() % (n - indices_to_kick[0] - 3));
-                    indices_to_kick[2] = indices_to_kick[1] + 1 + (rand() % (n - indices_to_kick[1] - 2));
-                } while ((indices_to_kick[1] <= indices_to_kick[0])    || 
-                            (indices_to_kick[2] <= indices_to_kick[1]) || 
-                            (indices_to_kick[2] > n - 1));
-
-                shake_three_edges(solution, inst, indices_to_kick); // 3-opt neighborhood
+                for (int i = 0; i < 5; i++) {
+                    do {
+                        indices_to_kick[0] = rand() % (n - 3);
+                        indices_to_kick[1] = indices_to_kick[0] + 1 + (rand() % (n - indices_to_kick[0] - 3));
+                        indices_to_kick[2] = indices_to_kick[1] + 1 + (rand() % (n - indices_to_kick[1] - 2));
+                    } while ((indices_to_kick[1] <= indices_to_kick[0])    || 
+                                (indices_to_kick[2] <= indices_to_kick[1]) || 
+                                (indices_to_kick[2] > n - 1));
+    
+                    shake_three_edges(solution, inst, indices_to_kick); // 3-opt neighborhood
+                }
+        
             }
             else if (k > 2) {
 
