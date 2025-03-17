@@ -63,7 +63,9 @@ void read_input(instance *inst) {
             inst->nnodes = atoi(token1);
             if ( VERBOSE >= 1000 ) { printf("DIMENSION: %d\n", inst->nnodes); fflush(NULL); }
             inst->points = (point*)malloc(inst->nnodes * sizeof(point));
-            inst->best_sol = (int *) malloc((inst->nnodes + 1) * sizeof(int));    
+            inst->best_sol = (tour*)malloc(sizeof(tour));
+            inst->best_sol->path = (int *) malloc((inst->nnodes + 1) * sizeof(int));
+            inst->best_sol->cost = 0.0;
             continue; 
         }
 
@@ -119,8 +121,9 @@ void parse_command_line(int argc, char** argv, instance *inst) {
 	inst->timelimit = CPX_INFBOUND;     
     inst->nnodes = 0;
     inst->points = NULL;
+    //inst->best_sol = NULL;
+    //inst->best_cost = INF_COST;
     inst->best_sol = NULL;
-    inst->best_cost = INF_COST;
 
     int help = 0; if ( argc < 1 ) help = 1;// if no parameters, print help
     int node_flag = 1, number_nodes = 0;
@@ -177,7 +180,9 @@ double random01() { return ((double) rand() / RAND_MAX); }
 void random_instance_generator(instance *inst) {
     srand(inst->seed);
     inst->points = (point*) malloc(inst->nnodes * sizeof(point));
-    inst->best_sol = (int *) malloc((inst->nnodes + 1) * sizeof(int));
+    inst->best_sol = (tour*)malloc(sizeof(tour));
+    inst->best_sol->path = (int *) malloc((inst->nnodes + 1) * sizeof(int));
+
 
     if ( VERBOSE >= 1000) { printf("Number of Nodes: %d\n", inst->nnodes); fflush(NULL); };
     for (int i = 0; i < inst->nnodes; i++){
@@ -214,17 +219,17 @@ double dist2(int i, int j, instance *inst) {
  */
 void compute_all_costs(instance* instance) {
     int n = instance->nnodes;
-    instance->cost = (double*)malloc(n * n * sizeof(double));
+    instance->cost_matrix = (double*)malloc(n * n * sizeof(double));
 
     for (int i = 0; i < n; i++) {
         for (int j = i; j < n; j++) { 
             double d = dist(i, j, instance);
             if (strcmp(instance->input_file, "NULL") != 0) {
-                instance->cost[i * n + j] = round(d);
-                instance->cost[j * n + i] = round(d); 
+                instance->cost_matrix[i * n + j] = round(d);
+                instance->cost_matrix[j * n + i] = round(d);
             } else {
-                instance->cost[i * n + j] = d;
-                instance->cost[j * n + i] = d; 
+                instance->cost_matrix[i * n + j] = d;
+                instance->cost_matrix[j * n + i] = d;
             }
         }
     }
@@ -232,30 +237,28 @@ void compute_all_costs(instance* instance) {
 
 /**
  * Check if the solution is feasible
- * @param solution array with the solution
+ * @param solution_path  solution path
  * @param cost cost of the solution
- * @param inst instance with the solution to be checked
  * @return 1 if the solution is feasible, 0 otherwise
  */
-int check_sol(int* solution, double cost, instance* inst){
+int check_sol(int* solution_path, double cost, instance* inst){
     
-    int* count = (int*)calloc(inst->nnodes, sizeof(int));
+    int* count = calloc(inst->nnodes, sizeof(int));
     int n = inst->nnodes;
 
-    if (solution[n] != solution[0]){
-        free(solution);
+    if (solution_path[n] != solution_path[0]){
         print_error("First and last nodes are different\n");
     }
 
     for (int i = 0; i < inst->nnodes; i++){
-        count[solution[i]]++;
+        count[solution_path[i]]++;
     }
 
     for (int i = 0; i < n; i++){
         if (count[i] != 1){
             free(count);
-            free(solution);
-            print_error("Node %d appears %d times in the solution\n");
+            printf("Node %d appears %d times in the solution\n", i, count[i]);
+            print_error("Exiting...\n");
         }
     }
 
@@ -263,11 +266,10 @@ int check_sol(int* solution, double cost, instance* inst){
 
     double total_cost = 0;
     for (int i = 0; i < n; i++){
-        total_cost += inst->cost[solution[i] * n + solution[i+1]];
+        total_cost += inst->cost_matrix[solution_path[i] * n + solution_path[i+1]];
     }
 
     if (fabs(total_cost - cost) > EPS_COST){
-        free(solution);
         print_error("Computed cost is different from the input cost\n");
     }
 
@@ -278,19 +280,12 @@ int check_sol(int* solution, double cost, instance* inst){
  * Update the best solution found so far
  * @param inst instance with the solution
  * @param solution array with the solution
- * @param cost cost of the solution
  */
-void update_best_sol(instance* inst, int* solution, double cost) {
-
-    if (inst->best_cost > cost) {
-        
-        if (check_sol(solution, cost, inst)){
-            inst->best_cost = cost;
-
-            for (int i = 0; i < inst->nnodes + 1; i++) {
-                inst->best_sol[i] = solution[i];
-            }
-        }
+void update_best_sol(instance* inst, tour* solution){
+    if (inst->best_sol->cost > solution->cost) {
+        check_sol(solution->path, solution->cost, inst);
+        memcpy(inst->best_sol, solution->path, ((inst->nnodes)+1) * sizeof(int));
+        inst->best_sol->cost = solution->cost;
     }
 }
 
@@ -300,12 +295,11 @@ void update_best_sol(instance* inst, int* solution, double cost) {
  * @param inst instance with the solution
  * @return cost of the solution
  */
-double compute_solution_cost(int* solution, instance* inst) {
-    double cost = 0.0;
+void compute_solution_cost(tour* solution, instance* inst) {
+    solution->cost = 0.0;
     for (int i = 0; i < inst->nnodes; i++) {
-        cost += inst->cost[solution[i] * inst->nnodes + solution[i + 1]];
+        solution->cost += inst->cost_matrix[solution->path[i] * inst->nnodes + solution->path[i + 1]];
     }
-    return cost;
 }
 
 /**

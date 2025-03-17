@@ -8,15 +8,17 @@
  */
 int grasp(int initial_point, instance* inst) {
     int n = inst->nnodes;
-    int* solution = (int*)malloc((n + 1) * sizeof(int));
+    //int* solution = (int*)malloc((n + 1) * sizeof(int));
+    tour* solution = (tour*)malloc(sizeof(tour));
+    solution->path = (int*)malloc((n+1) * sizeof(int));
+    solution->cost = 0.0;
 
     // Initialize the solution with node indices
     for (int i = 0; i < n; i++) {
-        solution[i] = i;
+        solution->path[i] = i;
     }
-    swap(solution, 0, initial_point); // Start from the initial point
+    swap(solution->path, 0, initial_point); // Start from the initial point
 
-    double new_cost = 0;
 
     // Constructive Phase
     for (int i = 0; i < n - 1; i++) {
@@ -26,7 +28,7 @@ int grasp(int initial_point, instance* inst) {
 
         // Find the nearest, second, third, and fourth nearest neighbors
         for (int j = i + 1; j < n; j++) {
-            double current_cost = inst->cost[solution[i] * n + solution[j]];
+            double current_cost = inst->cost_matrix[solution->path[i] * n + solution->path[j]];
 
             // Update the nearest, second, third, and fourth nearest neighbors
             if (current_cost < min_costs[0]) {
@@ -65,30 +67,30 @@ int grasp(int initial_point, instance* inst) {
         if (rand() % 100 < 95 || min_costs[1] == INF_COST || min_costs[2] == INF_COST || min_costs[3] == INF_COST) {
             // 95% chance: choose the nearest neighbor
             selected_index = min_indices[0];
-            new_cost += min_costs[0];
+            solution->cost += min_costs[0];
         } else {
             // 5% chance: randomly choose among the second, third, or fourth nearest neighbors
             int random_choice = rand() % 3; // 0, 1, or 2
             selected_index = min_indices[random_choice + 1];
-            new_cost += min_costs[random_choice + 1];
+            solution->cost += min_costs[random_choice + 1];
         }
 
         // Add the selected node to the solution
-        swap(solution, i + 1, selected_index);
+        swap(solution->path, i + 1, selected_index);
     }
 
     // Complete the tour by returning to the starting node
-    solution[n] = solution[0];
-    new_cost += inst->cost[solution[n - 1] * n + solution[n]];
+    solution->path[n] = solution->path[0];
+    solution->cost += inst->cost_matrix[solution->path[n - 1] * n + solution->path[n]];
 
     // Save the cost of the current solution
-    save_history_cost(new_cost);
+    save_history_cost(solution->cost);
 
     // Local Search Phase (2-opt heuristic)
-    two_opt(solution, new_cost, inst);
+    two_opt(solution, inst);
 
     // Update the best solution if the current one is better
-    update_best_sol(inst, solution, new_cost);
+    update_best_sol(inst, solution);
 
     free(solution);
     return 0;
@@ -112,13 +114,13 @@ int grasp_multi_start(instance* inst) {
             break;
         }
         grasp(i, inst);
-        save_history_incumbent(inst->best_cost);
+        save_history_incumbent(inst->best_sol->cost);
     }
 
-    plot_solution(inst, inst->best_sol);
+    plot_solution(inst, inst->best_sol->path);
     plot_incumbent();
     plot_history_cost();
-    if(VERBOSE >= 1) { printf("Best cost: %lf\n", inst->best_cost); }
+    if(VERBOSE >= 1) { printf("Best cost: %lf\n", inst->best_sol->cost); }
 
     return 0;
 }

@@ -18,9 +18,11 @@ int vns(instance* inst) {
     // k = 3 is the 5-Opt neighborhood
     int k_max = 3;  
 
-    int* solution = (int*)malloc((n+1) * sizeof(int));
-    memcpy(solution, inst->best_sol, (n+1) * sizeof(int));
-    double prev_cost = inst->best_cost;
+    tour* solution = malloc(sizeof(tour));
+    solution->path = (int*)malloc((n+1) * sizeof(int));
+    memcpy(solution->path, inst->best_sol->path, (n+1) * sizeof(int));
+    solution->cost = inst->best_sol->cost;
+    double prev_cost = inst->best_sol->cost;
 
     while (true){
 
@@ -65,14 +67,15 @@ int vns(instance* inst) {
             
             free(indices_to_kick);
         } 
+        compute_solution_cost(solution, inst);
+        save_history_cost(solution->cost);
 
-        save_history_cost(compute_solution_cost(solution, inst));
-
-        two_opt(solution, compute_solution_cost(solution, inst), inst);
-        current_cost = compute_solution_cost(solution, inst);
+        two_opt(solution, inst);
+        compute_solution_cost(solution, inst);
+        current_cost = solution->cost;
 
         if (current_cost < prev_cost){
-            k = 1;  
+            k = 1;
         }
         else {
             k++;
@@ -81,16 +84,16 @@ int vns(instance* inst) {
             }
         }
 
-        save_history_incumbent(inst->best_cost);
+        save_history_incumbent(inst->best_sol->cost);
         prev_cost = current_cost;
 
     }
 
-    plot_solution(inst, inst->best_sol);
+    plot_solution(inst, inst->best_sol->path);
     plot_incumbent();
     plot_history_cost();
     plot_incumbent_and_costs();
-    if(VERBOSE >= 1) { printf("Best cost: %lf\n", inst->best_cost); }
+    if(VERBOSE >= 1) { printf("Best cost: %lf\n", inst->best_sol->cost); }
 
     free(solution);
 

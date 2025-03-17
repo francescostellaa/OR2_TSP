@@ -3,7 +3,7 @@
 /**
  * Apply the 2-opt refinement to the solution
  */
-void two_opt(int* solution, double cost, instance* inst) {
+void two_opt(tour* solution, instance* inst) {
     int n = inst->nnodes;
 
     int improvement = 1;
@@ -20,10 +20,10 @@ void two_opt(int* solution, double cost, instance* inst) {
 
         for (int i = 0; i < n - 1; i++) {
             for (int j = i + 1; j < n; j++) {
-                double delta = inst->cost[solution[i] * n + solution[j]] +
-                               inst->cost[solution[i + 1] * n + solution[j + 1]] -
-                               inst->cost[solution[i] * n + solution[i + 1]] -
-                               inst->cost[solution[j] * n + solution[j + 1]];
+                double delta = inst->cost_matrix[solution->path[i] * n + solution->path[j]] +
+                               inst->cost_matrix[solution->path[i + 1] * n + solution->path[j + 1]] -
+                               inst->cost_matrix[solution->path[i] * n + solution->path[i + 1]] -
+                               inst->cost_matrix[solution->path[j] * n + solution->path[j + 1]];
                 if (delta < best_delta) {
                     best_delta = delta;
                     best_i = i;
@@ -37,23 +37,23 @@ void two_opt(int* solution, double cost, instance* inst) {
             int i = best_i+1;
             int j = best_j;
             while (i < j) {
-                swap(solution, i, j);
+                swap(solution->path, i, j);
                 i++;
                 j--;
             }
-            cost += best_delta;
+            solution->cost += best_delta;
             improvement = 1;
         }
     }
-    update_best_sol(inst, solution, cost);
+    update_best_sol(inst, solution);
 }
 
 /**
  * Reverse the segment between start and end in the solution
  */
-void reverse_segment(int* sol, int start, int end) {
+void reverse_segment(int* solution_path, int start, int end) {
     while (start < end) {
-        swap(sol, start, end);
+        swap(solution_path, start, end);
         start++;
         end--;
     }
@@ -62,7 +62,7 @@ void reverse_segment(int* sol, int start, int end) {
 /**
  * Shake the solution by swapping three edges, performing kicks in the solution
  */
-void shake_three_edges(int* solution, instance* inst, int* elements_to_swap){
+void shake_three_edges(tour* solution, instance* inst, int* elements_to_swap){
 
     int i = elements_to_swap[0];
     int j = elements_to_swap[1];
@@ -73,35 +73,35 @@ void shake_three_edges(int* solution, instance* inst, int* elements_to_swap){
     switch (reconnection)
     {
         case 0:
-            reverse_segment(solution, i+1, k);
-            reverse_segment(solution, j+1, k);
+            reverse_segment(solution->path, i+1, k);
+            reverse_segment(solution->path, j+1, k);
             break;
         case 1:
-            reverse_segment(solution, j+1, k+1);
-            reverse_segment(solution, i+1, k+1);
-            reverse_segment(solution, j+1, k+1);
+            reverse_segment(solution->path, j+1, k+1);
+            reverse_segment(solution->path, i+1, k+1);
+            reverse_segment(solution->path, j+1, k+1);
             break;
         case 2:
-            reverse_segment(solution, i+1, k);
-            reverse_segment(solution, i+1, j);
+            reverse_segment(solution->path, i+1, k);
+            reverse_segment(solution->path, i+1, j);
             break;
         case 3:
-            reverse_segment(solution, i+1, j);
-            reverse_segment(solution, j+1, k);
+            reverse_segment(solution->path, i+1, j);
+            reverse_segment(solution->path, j+1, k);
             break;
         default:
             break;
     }
 
-    double temp_cost = compute_solution_cost(solution, inst);
-    check_sol(solution, temp_cost, inst);
+    compute_solution_cost(solution, inst);
+    check_sol(solution->path, solution->cost, inst);
 }
 
 
 /**
  * Shake the solution by swapping five edges, performing kicks in the solution
  */
-void shake_five_edges(int* solution, instance* inst, int* elements_to_swap){
+void shake_five_edges(tour* solution, instance* inst, int* elements_to_swap){
 
     int i = elements_to_swap[0];
     int j = elements_to_swap[1];
@@ -114,29 +114,28 @@ void shake_five_edges(int* solution, instance* inst, int* elements_to_swap){
     switch (reconnection)
     {
         case 0:
-            reverse_segment(solution, j+1, m);
-            reverse_segment(solution, i+1, l);
-            reverse_segment(solution, i+1, j);
-            reverse_segment(solution, j+1, l);
-            reverse_segment(solution, k+1, l);
+            reverse_segment(solution->path, j+1, m);
+            reverse_segment(solution->path, i+1, l);
+            reverse_segment(solution->path, i+1, j);
+            reverse_segment(solution->path, j+1, l);
+            reverse_segment(solution->path, k+1, l);
             break;
         case 1:
-            reverse_segment(solution, i+1, k);
-            reverse_segment(solution, i+1, j);
-            reverse_segment(solution, j+1, k);
-            reverse_segment(solution, k+1, m);
-            reverse_segment(solution, k+1, l);
+            reverse_segment(solution->path, i+1, k);
+            reverse_segment(solution->path, i+1, j);
+            reverse_segment(solution->path, j+1, k);
+            reverse_segment(solution->path, k+1, m);
+            reverse_segment(solution->path, k+1, l);
             break;
         case 2:
-            reverse_segment(solution, i+1, k);
-            reverse_segment(solution, j+1, m);
-            reverse_segment(solution, j+1, k);
+            reverse_segment(solution->path, i+1, k);
+            reverse_segment(solution->path, j+1, m);
+            reverse_segment(solution->path, j+1, k);
             break;
         default:
             break;
     }
 
-    double temp_cost = compute_solution_cost(solution, inst);
-    check_sol(solution, temp_cost, inst);
-
+    compute_solution_cost(solution, inst);
+    check_sol(solution->path, solution->cost, inst);
 }

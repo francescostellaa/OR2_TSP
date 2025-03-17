@@ -25,6 +25,15 @@ typedef struct {
 } point;
 
 /**
+ * Generic solution structure
+ */
+typedef struct {
+    int* path;
+    double cost;
+} tour;
+
+
+/**
  * TSP instance structure 
  */
 typedef struct {
@@ -33,24 +42,16 @@ typedef struct {
     char input_file[256]; // input file name
     point* points; // points coordinates
 
-    double* cost; // cost matrix
-    int* best_sol; // best solution found
-    double best_cost; // best cost found
+    double* cost_matrix; // cost matrix
+    //int* best_sol; // best solution found
+    //double best_cost; // best cost found
+    tour* best_sol;
 
     double timelimit;
     double tstart;
 
 } instance;
 
-/**
- * Generic solution structure
- */
-typedef struct {
-
-    int* sol;
-    double cost;
-
-} solution;
 
 void free_instance(instance *inst);
 void read_input(instance *inst);
@@ -61,11 +62,11 @@ void plot_solution(instance *inst, int* solution);
 void print_error(const char *err); 
 void compute_all_costs(instance* instance);
 int check_sol(int* solution, double cost, instance* inst);
-void update_best_sol(instance* inst, int* solution, double cost);
+void update_best_sol(instance* inst, tour* solution);
 double dist(int i, int j, instance *inst);
 double dist2(int i, int j, instance *inst);
 void swap(int* arr, int i, int j);
-double compute_solution_cost(int* solution, instance* inst);
+void compute_solution_cost(tour* solution, instance* inst);
 void save_history_incumbent(double best_cost);
 void plot_incumbent();
 void save_history_cost(double cost);

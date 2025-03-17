@@ -9,35 +9,35 @@
  */
 int greedy(int initial_point, instance* inst, int run_2opt){
     int n = inst->nnodes;
-    int* solution = (int*)malloc((n+1) * sizeof(int));
-    
-    double new_cost = 0;
-
+    //int* solution = (int*)malloc((n+1) * sizeof(int));
+    tour* solution = (tour*)malloc(sizeof(tour));
+    solution->path = (int*)malloc((n+1) * sizeof(int));
+    solution->cost = 0.0;
     for (int i = 0; i < n; i++) {
-        solution[i] = i;
+        solution->path[i] = i;
     }
-    swap(solution, 0, initial_point);
+    swap(solution->path, 0, initial_point);
 
     for (int i = 0; i < n - 1; i++) {
         double min_cost = INF_COST;
         int min_index = -1;
         for (int j = i + 1; j < n; j++) {
-            double current_cost = inst->cost[solution[i] * n + solution[j]];
+            double current_cost = inst->cost_matrix[solution->path[i] * n + solution->path[j]];
             if (current_cost < min_cost) {
                 min_cost = current_cost;
                 min_index = j;
             }
         }
-        new_cost += min_cost;
-        swap(solution, i + 1, min_index);
+        solution->cost += min_cost;
+        swap(solution->path, i + 1, min_index);
     }
-    solution[n] = solution[0];
-    new_cost += inst->cost[solution[n-1] * n + solution[n]];
-    save_history_cost(new_cost);
-    update_best_sol(inst, solution, new_cost);
+    solution->path[n] = solution->path[0];
+    solution->cost += inst->cost_matrix[solution->path[n-1] * n + solution->path[n]];
+    save_history_cost(solution->cost);
+    update_best_sol(inst, solution);
     
     if (run_2opt){
-        two_opt(solution, new_cost, inst);
+        two_opt(solution, inst);
     }
     
     free(solution);
@@ -60,13 +60,13 @@ int greedy_multi_start(instance* inst, int run_2opt) {
             break;
         }
         greedy(i, inst, run_2opt);
-        save_history_incumbent(inst->best_cost);
+        save_history_incumbent(inst->best_sol->cost);
     }
 
-    plot_solution(inst, inst->best_sol);
+    plot_solution(inst, inst->best_sol->path);
     plot_incumbent();
     plot_history_cost();
-    if(VERBOSE >= 1) { printf("Best cost: %lf\n", inst->best_cost); }
+    if(VERBOSE >= 1) { printf("Best cost: %lf\n", inst->best_sol->cost); }
 
     return 0;
 }
