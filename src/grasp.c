@@ -103,9 +103,6 @@ int grasp(int initial_point, instance* inst) {
  */
 int grasp_multi_start(instance* inst) {
 
-    inst->tstart = second();
-    if ( VERBOSE >= 1000) { printf("Time start: %lf\n", inst->tstart); }
-
     int n = inst->nnodes;
 
     for (int i = 1; i < n; i++) {

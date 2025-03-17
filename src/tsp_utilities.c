@@ -65,7 +65,7 @@ void read_input(instance *inst) {
             inst->points = (point*)malloc(inst->nnodes * sizeof(point));
             inst->best_sol = (tour*)malloc(sizeof(tour));
             inst->best_sol->path = (int *) malloc((inst->nnodes + 1) * sizeof(int));
-            inst->best_sol->cost = 0.0;
+            inst->best_sol->cost = INF_COST;
             continue; 
         }
 
@@ -123,7 +123,9 @@ void parse_command_line(int argc, char** argv, instance *inst) {
     inst->points = NULL;
     //inst->best_sol = NULL;
     //inst->best_cost = INF_COST;
-    inst->best_sol = NULL;
+    inst->best_sol = (tour*)malloc(sizeof(tour));
+    inst->best_sol->path = NULL;
+    inst->best_sol->cost = INF_COST;
 
     int help = 0; if ( argc < 1 ) help = 1;// if no parameters, print help
     int node_flag = 1, number_nodes = 0;
@@ -284,7 +286,7 @@ int check_sol(int* solution_path, double cost, instance* inst){
 void update_best_sol(instance* inst, tour* solution){
     if (inst->best_sol->cost > solution->cost) {
         check_sol(solution->path, solution->cost, inst);
-        memcpy(inst->best_sol, solution->path, ((inst->nnodes)+1) * sizeof(int));
+        memcpy(inst->best_sol->path, solution->path, ((inst->nnodes)+1) * sizeof(int));
         inst->best_sol->cost = solution->cost;
     }
 }
