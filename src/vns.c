@@ -18,8 +18,8 @@ int vns(instance* inst) {
     // k = 3 is the 5-Opt neighborhood
     int k_max = 3;  
 
-    int* temp_sol = (int*)malloc((n+1) * sizeof(int));
-    memcpy(temp_sol, inst->best_sol, (n+1) * sizeof(int));
+    int* solution = (int*)malloc((n+1) * sizeof(int));
+    memcpy(solution, inst->best_sol, (n+1) * sizeof(int));
     double prev_cost = inst->best_cost;
 
     while (true){
@@ -44,7 +44,7 @@ int vns(instance* inst) {
                             (indices_to_kick[2] <= indices_to_kick[1]) || 
                             (indices_to_kick[2] > n - 1));
 
-                shake_three_edges(temp_sol, inst, indices_to_kick); // 3-opt neighborhood
+                shake_three_edges(solution, inst, indices_to_kick); // 3-opt neighborhood
             }
             else if (k > 2) {
 
@@ -60,16 +60,16 @@ int vns(instance* inst) {
                             (indices_to_kick[4] <= indices_to_kick[3]) ||
                             (indices_to_kick[4] > n - 1));
                 
-                shake_five_edges(temp_sol, inst, indices_to_kick); // 5-opt neighborhood
+                shake_five_edges(solution, inst, indices_to_kick); // 5-opt neighborhood
             }
             
             free(indices_to_kick);
         } 
 
-        save_history_cost(compute_solution_cost(temp_sol, inst));
+        save_history_cost(compute_solution_cost(solution, inst));
 
-        two_opt(temp_sol, compute_solution_cost(temp_sol, inst), inst);
-        current_cost = compute_solution_cost(temp_sol, inst);
+        two_opt(solution, compute_solution_cost(solution, inst), inst);
+        current_cost = compute_solution_cost(solution, inst);
 
         if (current_cost < prev_cost){
             k = 1;  
@@ -92,7 +92,7 @@ int vns(instance* inst) {
     plot_incumbent_and_costs();
     if(VERBOSE >= 1) { printf("Best cost: %lf\n", inst->best_cost); }
 
-    free(temp_sol);
+    free(solution);
 
     return 0;
 }
