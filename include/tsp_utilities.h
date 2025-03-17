@@ -30,17 +30,27 @@ typedef struct {
 typedef struct {
     int nnodes;
     int seed;
-    char input_file[256];
-    point* points;
+    char input_file[256]; // input file name
+    point* points; // points coordinates
 
-    double* cost;
-    int* best_sol;
-    double best_cost;
+    double* cost; // cost matrix
+    int* best_sol; // best solution found
+    double best_cost; // best cost found
 
     double timelimit;
     double tstart;
 
 } instance;
+
+/**
+ * Generic solution structure
+ */
+typedef struct {
+
+    int* sol;
+    double cost;
+
+} solution;
 
 void free_instance(instance *inst);
 void read_input(instance *inst);
