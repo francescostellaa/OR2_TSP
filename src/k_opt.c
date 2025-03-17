@@ -3,10 +3,7 @@
 /**
  * Apply the 2-opt refinement to the solution
  */
-int* two_opt(int* solution, instance* inst) {
-    int* temp_solution = (int*)malloc((inst->nnodes + 1) * sizeof(int));
-    memcpy(temp_solution, solution, (inst->nnodes + 1) * sizeof(int));
-    double temp_cost = compute_solution_cost(temp_solution, inst);
+void two_opt(int* solution, double cost, instance* inst) {
     int n = inst->nnodes;
 
     int improvement = 1;
@@ -23,10 +20,10 @@ int* two_opt(int* solution, instance* inst) {
 
         for (int i = 0; i < n - 1; i++) {
             for (int j = i + 1; j < n; j++) {
-                double delta = inst->cost[temp_solution[i] * n + temp_solution[j]] +
-                               inst->cost[temp_solution[i + 1] * n + temp_solution[j + 1]] -
-                               inst->cost[temp_solution[i] * n + temp_solution[i + 1]] -
-                               inst->cost[temp_solution[j] * n + temp_solution[j + 1]];
+                double delta = inst->cost[solution[i] * n + solution[j]] +
+                               inst->cost[solution[i + 1] * n + solution[j + 1]] -
+                               inst->cost[solution[i] * n + solution[i + 1]] -
+                               inst->cost[solution[j] * n + solution[j + 1]];
                 if (delta < best_delta) {
                     best_delta = delta;
                     best_i = i;
@@ -40,16 +37,15 @@ int* two_opt(int* solution, instance* inst) {
             int i = best_i+1;
             int j = best_j;
             while (i < j) {
-                swap(temp_solution, i, j);
+                swap(solution, i, j);
                 i++;
                 j--;
             }
-            temp_cost += best_delta;
+            cost += best_delta;
             improvement = 1;
         }
     }
-    update_best_sol(inst, temp_solution, temp_cost);
-    return temp_solution;
+    update_best_sol(inst, solution, cost);
 }
 
 /**

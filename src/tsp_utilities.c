@@ -243,8 +243,8 @@ int check_sol(int* solution, double cost, instance* inst){
     int n = inst->nnodes;
 
     if (solution[n] != solution[0]){
-        if ( VERBOSE >= 1000 ) { printf("First and last nodes are different\n"); }
-        return 0;
+        free(solution);
+        print_error("First and last nodes are different\n");
     }
 
     for (int i = 0; i < inst->nnodes; i++){
@@ -253,9 +253,9 @@ int check_sol(int* solution, double cost, instance* inst){
 
     for (int i = 0; i < n; i++){
         if (count[i] != 1){
-            if ( VERBOSE >= 1000 ) { printf("Node %d appears %d times in the solution\n", i, count[i]); }
             free(count);
-            return 0;
+            free(solution);
+            print_error("Node %d appears %d times in the solution\n");
         }
     }
 
@@ -267,8 +267,8 @@ int check_sol(int* solution, double cost, instance* inst){
     }
 
     if (fabs(total_cost - cost) > EPS_COST){
-        if ( VERBOSE >= 1000 ) { printf("Computed cost is different from the input cost\n"); }
-        return 0;
+        free(solution);
+        print_error("Computed cost is different from the input cost\n");
     }
 
     return 1;

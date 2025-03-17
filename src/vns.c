@@ -7,13 +7,15 @@
  * @return zero on success, non-zero on failures
  */
 int vns(instance* inst) {
-    inst->tstart = second();
-    if (VERBOSE >= 1000) { printf("Time start: %lf\n", inst->tstart); }
 
     int n = inst->nnodes;
     greedy(rand() % n, inst, 0);
 
     int k = 1; 
+    // k_max = maximum number of neighborhood changes
+    // k = 1 is the 2-Opt neighborhood
+    // k = 2 is the 3-Opt neighborhood
+    // k = 3 is the 5-Opt neighborhood
     int k_max = 3;  
 
     int* temp_sol = (int*)malloc((n+1) * sizeof(int));
@@ -33,17 +35,31 @@ int vns(instance* inst) {
             int* indices_to_kick = (int*)malloc(5 * sizeof(int));
 
             if (k == 2) {
-                indices_to_kick[0] = rand() % (n - 3);
-                indices_to_kick[1] = indices_to_kick[0] + 1 + (rand() % (n - indices_to_kick[0] - 3));
-                indices_to_kick[2] = indices_to_kick[1] + 1 + (rand() % (n - indices_to_kick[1] - 2));
+
+                do {
+                    indices_to_kick[0] = rand() % (n - 3);
+                    indices_to_kick[1] = indices_to_kick[0] + 1 + (rand() % (n - indices_to_kick[0] - 3));
+                    indices_to_kick[2] = indices_to_kick[1] + 1 + (rand() % (n - indices_to_kick[1] - 2));
+                } while ((indices_to_kick[1] <= indices_to_kick[0])    || 
+                            (indices_to_kick[2] <= indices_to_kick[1]) || 
+                            (indices_to_kick[2] > n - 1));
+
                 shake_three_edges(temp_sol, inst, indices_to_kick); // 3-opt neighborhood
             }
             else if (k > 2) {
-                indices_to_kick[0] = rand() % (n - 5);
-                indices_to_kick[1] = indices_to_kick[0] + 1 + (rand() % (n - indices_to_kick[0] - 5));
-                indices_to_kick[2] = indices_to_kick[1] + 1 + (rand() % (n - indices_to_kick[1] - 4));
-                indices_to_kick[3] = indices_to_kick[2] + 1 + (rand() % (n - indices_to_kick[2] - 3));
-                indices_to_kick[4] = indices_to_kick[3] + 1 + (rand() % (n - indices_to_kick[3] - 2));
+
+                do{
+                    indices_to_kick[0] = rand() % (n - 5);
+                    indices_to_kick[1] = indices_to_kick[0] + 1 + (rand() % (n - indices_to_kick[0] - 5));
+                    indices_to_kick[2] = indices_to_kick[1] + 1 + (rand() % (n - indices_to_kick[1] - 4));
+                    indices_to_kick[3] = indices_to_kick[2] + 1 + (rand() % (n - indices_to_kick[2] - 3));
+                    indices_to_kick[4] = indices_to_kick[3] + 1 + (rand() % (n - indices_to_kick[3] - 2));
+                } while((indices_to_kick[1] <= indices_to_kick[0])    || 
+                            (indices_to_kick[2] <= indices_to_kick[1]) || 
+                            (indices_to_kick[3] <= indices_to_kick[2]) ||
+                            (indices_to_kick[4] <= indices_to_kick[3]) ||
+                            (indices_to_kick[4] > n - 1));
+                
                 shake_five_edges(temp_sol, inst, indices_to_kick); // 5-opt neighborhood
             }
             
@@ -52,7 +68,7 @@ int vns(instance* inst) {
 
         save_history_cost(compute_solution_cost(temp_sol, inst));
 
-        temp_sol = two_opt(temp_sol, inst);
+        two_opt(temp_sol, compute_solution_cost(temp_sol, inst), inst);
         current_cost = compute_solution_cost(temp_sol, inst);
 
         if (current_cost < prev_cost){

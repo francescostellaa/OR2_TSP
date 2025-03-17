@@ -50,6 +50,8 @@ int main(int argc, char **argv) {
     }
 
     double t1 = second(); // Start time
+    inst.tstart = t1;
+    
     switch (choice) {
         case 1:
             if (VERBOSE >= 1) { printf("Running Greedy Multi-Start...\n"); }
@@ -80,7 +82,6 @@ int main(int argc, char **argv) {
             break;
         default:
             printf("Invalid choice.\n");
-            printf("HEREEEE");
             break;
     }
     

@@ -85,7 +85,7 @@ int grasp(int initial_point, instance* inst) {
     save_history_cost(new_cost);
 
     // Local Search Phase (2-opt heuristic)
-    two_opt(solution, inst);
+    two_opt(solution, new_cost, inst);
 
     // Update the best solution if the current one is better
     update_best_sol(inst, solution, new_cost);

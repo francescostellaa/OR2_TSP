@@ -37,7 +37,7 @@ int greedy(int initial_point, instance* inst, int run_2opt){
     update_best_sol(inst, solution, new_cost);
     
     if (run_2opt){
-        two_opt(solution, inst);
+        two_opt(solution, new_cost, inst);
     }
     
     free(solution);
@@ -51,9 +51,6 @@ int greedy(int initial_point, instance* inst, int run_2opt){
  * @param inst instance with the nodes
  */
 int greedy_multi_start(instance* inst, int run_2opt) {
-
-    inst->tstart = second();
-    if ( VERBOSE >= 1000) { printf("Time start: %lf\n", inst->tstart); }
 
     int n = inst->nnodes;
 
