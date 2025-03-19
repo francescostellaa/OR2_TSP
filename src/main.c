@@ -1,9 +1,8 @@
 #include <tsp_utilities.h>
-#include <sys/time.h>
 #include <greedy.h>
 #include <vns.h>
-
-#include "grasp.h"
+#include <tabu.h>
+#include <grasp.h>
 
 
 void print_menu() {
@@ -72,7 +71,10 @@ int main(int argc, char **argv) {
             }
             break;
         case 4:
-            // Tabu Search
+            if (VERBOSE >= 1) { printf("Running Tabu Search...\n"); }
+            if (tabu(&inst)) {
+                print_error("Error in tabu\n");
+            }
             break;
         case 5:
             if (VERBOSE >= 1) { printf("Running Grasp Multi-Start...\n"); }

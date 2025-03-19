@@ -66,6 +66,7 @@ void update_best_sol(instance* inst, tour* solution);
 double dist(int i, int j, instance *inst);
 double dist2(int i, int j, instance *inst);
 void swap(int* arr, int i, int j);
+void reverse_segment(int* solution_path, int i, int j);
 void compute_solution_cost(tour* solution, instance* inst);
 void save_history_incumbent(double best_cost);
 void plot_incumbent();

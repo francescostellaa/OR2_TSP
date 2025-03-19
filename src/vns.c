@@ -77,7 +77,7 @@ int vns(instance* inst) {
         compute_solution_cost(solution, inst);
         current_cost = solution->cost;
 
-        if (current_cost < prev_cost){
+        if (current_cost + EPS_COST < prev_cost){
             k = 1;
         }
         else {

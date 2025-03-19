@@ -319,6 +319,18 @@ void swap(int* arr, int i, int j) {
 }
 
 /**
+ * Reverse the segment between start and end in the solution
+ */
+void reverse_segment(int* solution_path, int start, int end) {
+    while (start < end) {
+        swap(solution_path, start, end);
+        start++;
+        end--;
+    }
+}
+
+
+/**
  * Plot the solution using gnuplot and save the output as a PNG file
  * @param inst instance with the solution to be plotted
  */

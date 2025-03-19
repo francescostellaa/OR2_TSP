@@ -24,7 +24,7 @@ void two_opt(tour* solution, instance* inst) {
                                inst->cost_matrix[solution->path[i + 1] * n + solution->path[j + 1]] -
                                inst->cost_matrix[solution->path[i] * n + solution->path[i + 1]] -
                                inst->cost_matrix[solution->path[j] * n + solution->path[j + 1]];
-                if (delta < best_delta) {
+                if (delta + EPS_COST < best_delta) {
                     best_delta = delta;
                     best_i = i;
                     best_j = j;
@@ -48,16 +48,6 @@ void two_opt(tour* solution, instance* inst) {
     update_best_sol(inst, solution);
 }
 
-/**
- * Reverse the segment between start and end in the solution
- */
-void reverse_segment(int* solution_path, int start, int end) {
-    while (start < end) {
-        swap(solution_path, start, end);
-        start++;
-        end--;
-    }
-}
 
 /**
  * Shake the solution by swapping three edges, performing kicks in the solution

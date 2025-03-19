@@ -31,6 +31,8 @@ add_executable(tsp
     src/k_opt.c
     src/vns.c
     src/grasp.c
+        src/tabu.c
+        include/tabu.h
 )
 
 # target_link_libraries( ${PROJECT_NAME} ${OpenCV_LIBS} ${Boost_FILESYSTEM_LIBRARY})
