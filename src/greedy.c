@@ -1,6 +1,5 @@
 #include <greedy.h>
 
-
 /**
  * Greedy algorithm to solve the TSP
  * @param initial_point initial point to start the greedy algorithm
@@ -9,7 +8,6 @@
  */
 int greedy(int initial_point, instance* inst, int run_2opt){
     int n = inst->nnodes;
-    //int* solution = (int*)malloc((n+1) * sizeof(int));
     tour* solution = (tour*)malloc(sizeof(tour));
     solution->path = (int*)malloc((n+1) * sizeof(int));
     solution->cost = 0.0;
@@ -39,7 +37,8 @@ int greedy(int initial_point, instance* inst, int run_2opt){
     if (run_2opt){
         two_opt(solution, inst);
     }
-    
+
+    free(solution->path);
     free(solution);
 
     return 0;

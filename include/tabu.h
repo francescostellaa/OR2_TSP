@@ -5,7 +5,7 @@
 #include <greedy.h>
 #include <stdbool.h>
 
-#define TENURE 20
+//#define TENURE 18
 
 typedef struct {
     int i, j;

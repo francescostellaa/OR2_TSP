@@ -121,8 +121,6 @@ void parse_command_line(int argc, char** argv, instance *inst) {
 	inst->timelimit = CPX_INFBOUND;     
     inst->nnodes = 0;
     inst->points = NULL;
-    //inst->best_sol = NULL;
-    //inst->best_cost = INF_COST;
     inst->best_sol = (tour*)malloc(sizeof(tour));
     inst->best_sol->path = NULL;
     inst->best_sol->cost = INF_COST;
@@ -162,7 +160,7 @@ void parse_command_line(int argc, char** argv, instance *inst) {
         if (node_flag){
             printf("-nodes %d\n", inst->nnodes);
         }
-		printf("\nenter -help or --help for help\n");
+		printf("\n enter -help or --help for help\n");
 		printf("----------------------------------------------------------------------------------------------\n\n");
 	}        
 	
@@ -258,8 +256,8 @@ int check_sol(int* solution_path, double cost, instance* inst){
 
     for (int i = 0; i < n; i++){
         if (count[i] != 1){
-            free(count);
             printf("Node %d appears %d times in the solution\n", i, count[i]);
+            free(count);
             print_error("Exiting...\n");
         }
     }

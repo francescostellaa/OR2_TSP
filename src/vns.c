@@ -1,6 +1,5 @@
 #include <stdbool.h>
 #include <vns.h>
-
 /**
  * Implement the Variable Neighborhood Search (VNS) algorithm
  * @param inst
@@ -9,6 +8,7 @@
 int vns(instance* inst) {
 
     int n = inst->nnodes;
+    srand(inst->seed);
     greedy(rand() % n, inst, 0);
 
     int k = 1; 
@@ -98,6 +98,7 @@ int vns(instance* inst) {
     plot_incumbent_and_costs();
     if(VERBOSE >= 1) { printf("Best cost: %lf\n", inst->best_sol->cost); }
 
+    free(solution->path);
     free(solution);
 
     return 0;
