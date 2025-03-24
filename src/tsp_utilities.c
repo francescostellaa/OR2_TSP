@@ -182,6 +182,7 @@ void random_instance_generator(instance *inst) {
     inst->points = (point*) malloc(inst->nnodes * sizeof(point));
     inst->best_sol = (tour*)malloc(sizeof(tour));
     inst->best_sol->path = (int *) malloc((inst->nnodes + 1) * sizeof(int));
+    inst->best_sol->cost = INF_COST;
 
 
     if ( VERBOSE >= 1000) { printf("Number of Nodes: %d\n", inst->nnodes); fflush(NULL); };
@@ -340,7 +341,7 @@ void plot_solution(instance *inst, int* solution) {
     }
 
     // Set up the Gnuplot configuration
-    fprintf(gnuplot, "set terminal pngcairo enhanced color font 'Helvetica,12'\n");  // Set PNG output
+    fprintf(gnuplot, "set terminal pngcairo enhanced color font 'Helvetica,12' size 1000,720\n");  // Set PNG output
     fprintf(gnuplot, "set output '../data/solution.png'\n");
     fprintf(gnuplot, "set title 'TSP Solution' font 'Helvetica,16\n");
 
@@ -434,7 +435,7 @@ void plot_history_cost() {
     }
 
     // Set up Gnuplot settings
-    fprintf(gnuplot, "set terminal pngcairo enhanced color font 'Helvetica,12'\n");
+    fprintf(gnuplot, "set terminal pngcairo enhanced color font 'Helvetica,12' size 1080,720\n");
     fprintf(gnuplot, "set output '../data/cost_evolution.png'\n");
     fprintf(gnuplot, "set title 'Evolution of Best Solution' font 'Helvetica,16'\n");
 
@@ -463,7 +464,7 @@ void plot_incumbent() {
     }
 
     // Set up Gnuplot settings
-    fprintf(gnuplot, "set terminal pngcairo enhanced color font 'Helvetica,12'\n");  
+    fprintf(gnuplot, "set terminal pngcairo enhanced color font 'Helvetica,12' size 1080,720\n");  
     fprintf(gnuplot, "set output '../data/solution_evolution.png'\n");
     fprintf(gnuplot, "set title 'Evolution of Best Solution' font 'Helvetica,16'\n");
     
@@ -489,7 +490,8 @@ void plot_incumbent_and_costs() {
     }
 
     // Set up Gnuplot settings
-    fprintf(gnuplot, "set terminal pngcairo enhanced color font 'Helvetica,12'\n");  
+    //fprintf(gnuplot, "set terminal pngcairo enhanced color font 'Helvetica,12'\n");  
+    fprintf(gnuplot, "set terminal pngcairo enhanced color font 'Helvetica,12' size 1080,720\n"); 
     fprintf(gnuplot, "set output '../data/complete_solution_evolution.png'\n");
     fprintf(gnuplot, "set title 'Evolution of Best Solution' font 'Helvetica,16'\n");
     

@@ -60,11 +60,13 @@ int tabu(instance* inst) {
 
         update_best_sol(inst, solution);
         save_history_incumbent(inst->best_sol->cost);
-        save_history_incumbent(solution->cost);
+        save_history_cost(solution->cost);
     }
 
     plot_solution(inst, inst->best_sol->path);
     plot_incumbent();
+    plot_history_cost();
+    plot_incumbent_and_costs();
     free(when_tabu);
     free(solution->path);
     free(solution);
