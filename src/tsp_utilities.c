@@ -12,6 +12,8 @@ void print_error(const char *err) { printf("\n\n ERROR: %s \n\n", err); fflush(N
  */
 void free_instance(instance *inst) {
     free(inst->points);
+    free(inst->cost_matrix);
+    free(inst->best_sol->path);
     free(inst->best_sol);
 }
 
