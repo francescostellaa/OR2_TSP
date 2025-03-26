@@ -55,13 +55,13 @@ int main(int argc, char **argv) {
     switch (choice) {
         case 1:
             if (VERBOSE >= 1) { printf("Running Greedy Multi-Start...\n"); }
-            if (greedy_multi_start(&inst, 0)) {
+            if (greedy_multi_start(&inst, 0, inst.timelimit)) {
                 print_error("Error in greedy_multi_start\n");
             }
             break;
         case 2:
             if (VERBOSE >= 1) { printf("Running Greedy Multi-Start + 2-OPT Refinement...\n"); }
-            if (greedy_multi_start(&inst, 1)) {
+            if (greedy_multi_start(&inst, 1, inst.timelimit)) {
                 print_error("Error in greedy_multi_start\n");
             }
             break;
@@ -96,7 +96,7 @@ int main(int argc, char **argv) {
             break;
         case 5:
             if (VERBOSE >= 1) { printf("Running Grasp Multi-Start...\n"); }
-            if (grasp_multi_start(&inst)) {
+            if (grasp_multi_start(&inst, inst.timelimit)) {
                 print_error("Error in grasp_multi_start\n");
             }
             break;

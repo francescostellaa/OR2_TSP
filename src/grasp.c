@@ -4,31 +4,35 @@
  * Implement the Greedy Randomized Adaptive Search Procedure (GRASP) algorithm
  * @param initial_point
  * @param inst
+ * @param solution
  * @return zero on success, non-zero on failures
  */
-int grasp(int initial_point, instance* inst) {
-    int n = inst->nnodes;
-    //int* solution = (int*)malloc((n + 1) * sizeof(int));
-    tour* solution = (tour*)malloc(sizeof(tour));
-    solution->path = (int*)malloc((n+1) * sizeof(int));
-    solution->cost = 0.0;
+int grasp(int initial_point, const instance* inst, tour* solution) {
+    if (solution == NULL) {
+        print_error("Error in greedy\n");
+        return -1;
+    }
+
+    if (solution->path == NULL) {
+        print_error("Error in greedy\n");
+        return -1;
+    }
 
     // Initialize the solution with node indices
-    for (int i = 0; i < n; i++) {
+    for (int i = 0; i < inst->nnodes; i++) {
         solution->path[i] = i;
     }
     swap(solution->path, 0, initial_point); // Start from the initial point
 
-
     // Constructive Phase
-    for (int i = 0; i < n - 1; i++) {
+    for (int i = 0; i < inst->nnodes - 1; i++) {
         // Arrays to store the nearest neighbor costs and indices
         double min_costs[4] = {INF_COST, INF_COST, INF_COST, INF_COST};
         int min_indices[4] = {-1, -1, -1, -1};
 
         // Find the nearest, second, third, and fourth nearest neighbors
-        for (int j = i + 1; j < n; j++) {
-            double current_cost = inst->cost_matrix[solution->path[i] * n + solution->path[j]];
+        for (int j = i + 1; j < inst->nnodes; j++) {
+            double current_cost = inst->cost_matrix[solution->path[i] * inst->nnodes + solution->path[j]];
 
             // Update the nearest, second, third, and fourth nearest neighbors
             if (current_cost < min_costs[0]) {
@@ -80,43 +84,72 @@ int grasp(int initial_point, instance* inst) {
     }
 
     // Complete the tour by returning to the starting node
-    solution->path[n] = solution->path[0];
-    solution->cost += inst->cost_matrix[solution->path[n - 1] * n + solution->path[n]];
-
-    // Save the cost of the current solution
-    save_history_cost(solution->cost);
+    solution->path[inst->nnodes] = solution->path[0];
+    solution->cost += inst->cost_matrix[solution->path[inst->nnodes - 1] * inst->nnodes + solution->path[inst->nnodes]];
 
     // Local Search Phase (2-opt heuristic)
     two_opt(solution, inst);
 
-    // Update the best solution if the current one is better
-    update_best_sol(inst, solution);
+    // Save the cost of the current solution
+    save_history_cost(solution->cost);
 
-    free(solution);
     return 0;
 }
 
 /**
  * Multi-start GRASP algorithm to solve the TSP
  * @param inst
+ * @param timelimit
  * @return
  */
-int grasp_multi_start(instance* inst) {
+int grasp_multi_start(instance* inst, double timelimit) {
 
-    int n = inst->nnodes;
+    if (inst == NULL) {
+        print_error("Error in initialization of the instance\n");
+        return -1;
+    }
+    if (inst->best_sol == NULL) {
+        printf("No solution exists in the instance\n");
+        return -1;
+    }
+    if (inst->best_sol->path == NULL) {
+        print_error("Error occurred while allocating memory for the instance solution\n");
+        return -1;
+    }
+
+    const int n = inst->nnodes;
 
     for (int i = 1; i < n; i++) {
-        if(second() - inst->tstart > inst->timelimit) {
+        if(second() - inst->tstart > timelimit) {
             if ( VERBOSE >= 100 ) { printf("Time limit reached\n"); }
             break;
         }
-        grasp(i, inst);
+        tour* solution = malloc(sizeof(tour));
+        if (solution == NULL) {
+            print_error("Error: Memory allocation failed for solution\n");
+            return -1;
+        }
+        solution->path = (int*)malloc((n + 1) * sizeof(int));
+        solution->cost = 0.0;
+
+        if (solution->path == NULL) {
+            print_error("Error: Memory allocation failed for solution path\n");
+            free(solution);
+            return -1;
+        }
+
+        if (grasp(i, inst, solution) == 0) {
+            update_best_sol(inst, solution);
+        }
         save_history_incumbent(inst->best_sol->cost);
+        free(solution->path);
+        free(solution);
     }
 
     plot_solution(inst, inst->best_sol->path);
     plot_incumbent();
     plot_history_cost();
+    plot_incumbent_and_costs();
     if(VERBOSE >= 1) { printf("Best cost: %lf\n", inst->best_sol->cost); }
 
     return 0;

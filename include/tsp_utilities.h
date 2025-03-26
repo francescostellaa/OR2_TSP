@@ -43,8 +43,6 @@ typedef struct {
     point* points; // points coordinates
 
     double* cost_matrix; // cost matrix
-    //int* best_sol; // best solution found
-    //double best_cost; // best cost found
     tour* best_sol;
 
     double timelimit;
