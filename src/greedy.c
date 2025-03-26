@@ -1,16 +1,86 @@
 #include <greedy.h>
 
 /**
+ * Multi-start greedy algorithm to solve the TSP
+ * repeated greedy algorithm with different initial points
+ * @param inst instance with the nodes
+ * @param run_2opt flag to run the 2-opt refinement. If 1, the 2-opt refinement is applied
+ */
+int greedy_multi_start(instance* inst, int run_2opt) {
+
+    if (inst == NULL) {
+        print_error("Error in initialization of the instance\n");
+        return -1;
+    }
+    if (inst->best_sol == NULL) {
+        printf("No solution exists.\n");
+        return -1;
+    }
+
+    if (inst->best_sol->path == NULL) {
+        print_error("Error occurred while allocating memory for the instance\n");
+        return -1;
+    }
+
+    int n = inst->nnodes;
+
+    for (int i = 1; i < n; i++) {
+        if(second() - inst->tstart > inst->timelimit) {
+            if ( VERBOSE >= 100 ) { printf("Time limit reached\n"); }
+            break;
+        }
+        tour* solution = malloc(sizeof(tour));
+        if (solution == NULL) {
+            print_error("Error: Memory allocation failed for solution\n");
+            return -1;
+        }
+
+        solution->path = (int*)malloc((n + 1) * sizeof(int));
+        solution->cost = 0.0;
+
+        if (solution->path == NULL) {
+            print_error("Error: Memory allocation failed for solution path\n");
+            free(solution);
+            return -1;
+        }
+        if (greedy(i, solution, run_2opt, inst) == 0) {
+            update_best_sol(inst, solution);
+        }
+        save_history_incumbent(inst->best_sol->cost);
+        free(solution->path);
+        free(solution);
+    }
+
+    plot_solution(inst, inst->best_sol->path);
+    plot_incumbent();
+    plot_history_cost();
+    plot_incumbent_and_costs();
+    if(VERBOSE >= 1) { printf("Best cost: %lf\n", inst->best_sol->cost); }
+
+    return 0;
+}
+
+/**
+ * @brief
  * Greedy algorithm to solve the TSP
  * @param initial_point initial point to start the greedy algorithm
- * @param inst instance with the nodes
+ * @param solution struct that con
  * @param run_2opt flag to run the 2-opt refinement
+ * @param inst instance with the nodes
  */
-int greedy(int initial_point, instance* inst, int run_2opt){
+int greedy(int initial_point, tour* solution, int run_2opt, const instance* inst){
+
+    if (solution == NULL) {
+        print_error("Error in greedy\n");
+        return -1;
+    }
+
+    if (solution->path == NULL) {
+        print_error("Error in greedy\n");
+        return -1;
+    }
+
     int n = inst->nnodes;
-    tour* solution = (tour*)malloc(sizeof(tour));
-    solution->path = (int*)malloc((n+1) * sizeof(int));
-    solution->cost = 0.0;
     for (int i = 0; i < n; i++) {
         solution->path[i] = i;
     }
@@ -31,41 +101,10 @@ int greedy(int initial_point, instance* inst, int run_2opt){
     }
     solution->path[n] = solution->path[0];
     solution->cost += inst->cost_matrix[solution->path[n-1] * n + solution->path[n]];
-    save_history_cost(solution->cost);
-    update_best_sol(inst, solution);
-    
+
     if (run_2opt){
         two_opt(solution, inst);
     }
-
-    free(solution->path);
-    free(solution);
-
-    return 0;
-}
-
-/**
- * Multi-start greedy algorithm to solve the TSP
- * repeated greedy algorithm with different initial points
- * @param inst instance with the nodes
- */
-int greedy_multi_start(instance* inst, int run_2opt) {
-
-    int n = inst->nnodes;
-
-    for (int i = 1; i < n; i++) {
-        if(second() - inst->tstart > inst->timelimit) {
-            if ( VERBOSE >= 100 ) { printf("Time limit reached\n"); }
-            break;
-        }
-        greedy(i, inst, run_2opt);
-        save_history_incumbent(inst->best_sol->cost);
-    }
-
-    plot_solution(inst, inst->best_sol->path);
-    plot_incumbent();
-    plot_history_cost();
-    if(VERBOSE >= 1) { printf("Best cost: %lf\n", inst->best_sol->cost); }
-
+    save_history_cost(solution->cost);
     return 0;
 }

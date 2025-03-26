@@ -242,7 +242,7 @@ void compute_all_costs(instance* instance) {
  * @param cost cost of the solution
  * @return 1 if the solution is feasible, 0 otherwise
  */
-int check_sol(int* solution_path, double cost, instance* inst){
+int check_sol(int* solution_path, double cost, const instance* inst){
     
     int* count = calloc(inst->nnodes, sizeof(int));
     int n = inst->nnodes;
@@ -296,7 +296,7 @@ void update_best_sol(instance* inst, tour* solution){
  * @param inst instance with the solution
  * @return cost of the solution
  */
-void compute_solution_cost(tour* solution, instance* inst) {
+void compute_solution_cost(tour* solution, const instance* inst){
     solution->cost = 0.0;
     for (int i = 0; i < inst->nnodes; i++) {
         solution->cost += inst->cost_matrix[solution->path[i] * inst->nnodes + solution->path[i + 1]];
@@ -333,7 +333,7 @@ void reverse_segment(int* solution_path, int start, int end) {
  * Plot the solution using gnuplot and save the output as a PNG file
  * @param inst instance with the solution to be plotted
  */
-void plot_solution(instance *inst, int* solution) {
+void plot_solution(const instance *inst, int* solution) {
     FILE *gnuplot = popen("gnuplot -persist", "w");
     if (gnuplot == NULL) { 
         printf("Error opening gnuplot\n");

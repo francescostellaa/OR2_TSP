@@ -3,8 +3,8 @@
 /**
  * Apply the 2-opt refinement to the solution
  */
-void two_opt(tour* solution, instance* inst) {
-    int n = inst->nnodes;
+void two_opt(tour* solution, const instance* inst) {
+    const int n = inst->nnodes;
 
     int improvement = 1;
     while (improvement) {
@@ -45,20 +45,20 @@ void two_opt(tour* solution, instance* inst) {
             improvement = 1;
         }
     }
-    update_best_sol(inst, solution);
+    //update_best_sol(inst, solution);
 }
 
 
 /**
  * Shake the solution by swapping three edges, performing kicks in the solution
  */
-void shake_three_edges(tour* solution, instance* inst, int* elements_to_swap){
+void shake_three_edges(tour* solution, const instance* inst, const int* elements_to_swap){
 
-    int i = elements_to_swap[0];
-    int j = elements_to_swap[1];
-    int k = elements_to_swap[2];
+    const int i = elements_to_swap[0];
+    const int j = elements_to_swap[1];
+    const int k = elements_to_swap[2];
 
-    int reconnection = rand() % 4;
+    const int reconnection = rand() % 4;
 
     switch (reconnection)
     {
@@ -91,15 +91,15 @@ void shake_three_edges(tour* solution, instance* inst, int* elements_to_swap){
 /**
  * Shake the solution by swapping five edges, performing kicks in the solution
  */
-void shake_five_edges(tour* solution, instance* inst, int* elements_to_swap){
+void shake_five_edges(tour* solution, const instance* inst, const int* elements_to_swap){
 
-    int i = elements_to_swap[0];
-    int j = elements_to_swap[1];
-    int k = elements_to_swap[2];
-    int l = elements_to_swap[3];
-    int m = elements_to_swap[4];
+    const int i = elements_to_swap[0];
+    const int j = elements_to_swap[1];
+    const int k = elements_to_swap[2];
+    const int l = elements_to_swap[3];
+    const int m = elements_to_swap[4];
     
-    int reconnection = rand() % 3;
+    const int reconnection = rand() % 3;
 
     switch (reconnection)
     {

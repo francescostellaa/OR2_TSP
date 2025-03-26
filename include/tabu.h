@@ -11,7 +11,7 @@ typedef struct {
     int i, j;
 } tabu_move;
 
-int tabu(instance* inst);
+int tabu(const instance* inst, tour* solution, double timelimit);
 
 
 #endif //TABU_H

@@ -1,25 +1,40 @@
 #include "tabu.h"
 
-int tabu(instance* inst) {
+int tabu(const instance* inst, tour* solution, double timelimit) {
+
+    if (inst->best_sol->path == NULL) {
+        print_error("Error occurred while allocating memory for the instance\n");
+        return -1;
+    }
+    if (solution == NULL) {
+        print_error("Error occurred while allocating memory for the solution\n");
+        return -1;
+    }
+    if (solution->path == NULL) {
+        print_error("Error occurred while allocating memory for the solution path\n");
+        return -1;
+    }
+
     int n = inst->nnodes;
-    srand(inst->seed);
-    greedy(rand() % n, inst, 0);
-    tour* solution = malloc(sizeof(tour));
-    solution->path = (int*)malloc((n+1) * sizeof(int));
-    memcpy(solution->path, inst->best_sol->path, (n+1) * sizeof(int));
-    solution->cost = inst->best_sol->cost;
-    int TENURE = inst->nnodes / 100 + 10;
+    int tenure = inst->nnodes / 100 + 10;
+    tour* best_solution = malloc(sizeof(tour));
+    best_solution->path = (int*)malloc((n + 1) * sizeof(int));
+    memcpy(best_solution->path, solution->path, (n + 1) * sizeof(int));
+    double current_best_cost = solution->cost;
 
     int* when_tabu = malloc(sizeof(int) * n);
+    if (when_tabu == NULL) {
+        print_error("Error occurred while allocating memory for the tabu\n");
+        return -1;
+    }
     for (int i = 0; i < n; i++) {
         when_tabu[i] = -1;
     }
-    printf("Best cost: %lf\n", inst->best_sol->cost);
     int iteration = 0;
 
     while (true) {
 
-        if (second() - inst->tstart > inst->timelimit) {
+        if (second() - inst->tstart > timelimit) {
             if (VERBOSE >= 100) { printf("Time limit reached\n"); }
             break;
         }
@@ -30,8 +45,8 @@ int tabu(instance* inst) {
 
         for (int i = 0; i < n - 1; i++) {
             for (int j = i + 1; j < n; j++) {
-                bool is_tabu = ((when_tabu[solution->path[i]] + TENURE > iteration ) ||
-                               (when_tabu[solution->path[j]] + TENURE > iteration ));
+                bool is_tabu = ((when_tabu[solution->path[i]] + tenure > iteration ) ||
+                               (when_tabu[solution->path[j]] + tenure > iteration ));
 
                 if (!is_tabu) {
                     double delta = inst->cost_matrix[solution->path[i] * n + solution->path[j]] +
@@ -48,7 +63,7 @@ int tabu(instance* inst) {
         }
 
         if (iteration % 100 == 0) {
-            TENURE = (int)(sqrt(inst->nnodes) + rand() % (int)(inst->nnodes / sqrt(inst->nnodes) + 1));
+            tenure = (int)(sqrt(inst->nnodes) + rand() % (int)(inst->nnodes / sqrt(inst->nnodes) + 1));
         }
         iteration++;
         if (best_i != -1 && best_j != -1) {
@@ -58,18 +73,24 @@ int tabu(instance* inst) {
             solution->cost += best_delta;
         }
 
-        update_best_sol(inst, solution);
-        save_history_incumbent(inst->best_sol->cost);
+        if (solution->cost + EPS_COST < current_best_cost){
+            memcpy(best_solution->path, solution->path, (n + 1) * sizeof(int));
+            current_best_cost = solution->cost;
+        }
+
+        save_history_incumbent(current_best_cost);
         save_history_cost(solution->cost);
     }
 
-    plot_solution(inst, inst->best_sol->path);
+    plot_solution(inst, solution->path);
     plot_incumbent();
     plot_history_cost();
     plot_incumbent_and_costs();
     free(when_tabu);
-    free(solution->path);
-    free(solution);
-    if(VERBOSE >= 1) { printf("Best cost: %lf\n", inst->best_sol->cost); }
+
+    memcpy(solution->path, best_solution->path, (n + 1) * sizeof(int));
+    solution->cost = current_best_cost;
+    free(best_solution->path);
+    free(best_solution);
     return 0;
 }

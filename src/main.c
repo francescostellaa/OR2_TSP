@@ -27,7 +27,7 @@ int main(int argc, char **argv) {
     if ( VERBOSE >= 4000 ) { printf("Parse completed!\n"); }
 
     // Read the input file if it is defined otherwise generate random coordinates
-    if(strcmp(inst.input_file, "NULL")) {
+    if(strcmp(inst.input_file, "NULL") != 0) {
         if ( VERBOSE >= 100) {printf("Input file: %s\n", inst.input_file);}
         read_input(&inst);
     }
@@ -50,6 +50,7 @@ int main(int argc, char **argv) {
 
     double t1 = second(); // Start time
     inst.tstart = t1;
+    srand(inst.seed);   //Set the random seed
     
     switch (choice) {
         case 1:
@@ -66,15 +67,32 @@ int main(int argc, char **argv) {
             break;
         case 3:
             if (VERBOSE >= 1) { printf("Running Variable Neighborhood Search (VNS)...\n"); }
-            if (vns(&inst)) {
+            tour* solution_vns = malloc(sizeof(tour));
+            solution_vns->path = (int*)malloc((inst.nnodes + 1) * sizeof(int));
+            solution_vns->cost = 0.0;
+            greedy(rand() % inst.nnodes, solution_vns, 0, &inst);
+            if (vns(&inst, solution_vns, inst.timelimit)) {
                 print_error("Error in vns\n");
             }
+            update_best_sol(&inst, solution_vns);
+            if(VERBOSE >= 1) { printf("Best cost: %lf\n", inst.best_sol->cost); }
+            free(solution_vns->path);
+            free(solution_vns);
             break;
         case 4:
             if (VERBOSE >= 1) { printf("Running Tabu Search...\n"); }
-            if (tabu(&inst)) {
+            tour* solution_tabu = malloc(sizeof(tour));
+            solution_tabu->path = (int*)malloc((inst.nnodes + 1) * sizeof(int));
+            solution_tabu->cost = 0.0;
+            greedy(rand() % inst.nnodes, solution_tabu, 0, &inst);
+
+            if (tabu(&inst, solution_tabu, inst.timelimit)) {
                 print_error("Error in tabu\n");
             }
+            update_best_sol(&inst, solution_tabu);
+            if(VERBOSE >= 1) { printf("Best cost: %lf\n", inst.best_sol->cost); }
+            free(solution_tabu->path);
+            free(solution_tabu);
             break;
         case 5:
             if (VERBOSE >= 1) { printf("Running Grasp Multi-Start...\n"); }

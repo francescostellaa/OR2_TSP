@@ -7,6 +7,6 @@
 #include <greedy.h>
 #include <k_opt.h>
 
-int vns(instance* inst);
+int vns(const instance* inst, tour* solution, double timelimit);
 
 #endif // VNS_H

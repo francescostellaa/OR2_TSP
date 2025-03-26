@@ -3,13 +3,13 @@
 /**
  * Implement the Variable Neighborhood Search (VNS) algorithm
  * @param inst
+ * @param solution
+ * @param timelimit
  * @return zero on success, non-zero on failures
  */
-int vns(instance* inst) {
+int vns(const instance* inst, tour* solution, double timelimit) {
 
     int n = inst->nnodes;
-    srand(inst->seed);
-    greedy(rand() % n, inst, 0);
 
     int k = 1; 
     // k_max = maximum number of neighborhood changes
@@ -18,16 +18,15 @@ int vns(instance* inst) {
     // k = 3 is the 5-Opt neighborhood
     int k_max = 3;  
 
-    tour* solution = malloc(sizeof(tour));
-    solution->path = (int*)malloc((n+1) * sizeof(int));
-    memcpy(solution->path, inst->best_sol->path, (n+1) * sizeof(int));
-    solution->cost = inst->best_sol->cost;
-    double prev_cost = inst->best_sol->cost;
+    tour* best_solution = malloc(sizeof(tour));
+    best_solution->path = (int*)malloc((n + 1) * sizeof(int));
+    memcpy(best_solution->path, solution->path, (n + 1) * sizeof(int));
+    double current_best_cost = solution->cost;
 
     while (true){
 
         double current_cost = INF_COST;
-        if (second() - inst->tstart > inst->timelimit) {
+        if (second() - inst->tstart > timelimit) {
             if (VERBOSE >= 100) { printf("Time limit reached\n"); }
             break;
         }
@@ -69,15 +68,17 @@ int vns(instance* inst) {
             }
             
             free(indices_to_kick);
-        } 
+        }
         compute_solution_cost(solution, inst);
         save_history_cost(solution->cost);
 
         two_opt(solution, inst);
-        compute_solution_cost(solution, inst);
         current_cost = solution->cost;
-
-        if (current_cost + EPS_COST < inst->best_sol->cost){
+        if (current_cost + EPS_COST < current_best_cost){
+            memcpy(best_solution->path, solution->path, (n + 1) * sizeof(int));
+            current_best_cost = current_cost;
+        }
+        if (current_cost + EPS_COST < current_best_cost){
             k = 1;
         }
         else {
@@ -87,19 +88,19 @@ int vns(instance* inst) {
             }
         }
 
-        save_history_incumbent(inst->best_sol->cost);
-        prev_cost = current_cost;
+        save_history_incumbent(current_best_cost);
 
     }
 
-    plot_solution(inst, inst->best_sol->path);
+    memcpy(solution->path, best_solution->path, (n + 1) * sizeof(int));
+    solution->cost = current_best_cost;
+
+    free(best_solution->path);
+    free(best_solution);
+    plot_solution(inst, solution->path);
     plot_incumbent();
     plot_history_cost();
     plot_incumbent_and_costs();
-    if(VERBOSE >= 1) { printf("Best cost: %lf\n", inst->best_sol->cost); }
-
-    free(solution->path);
-    free(solution);
 
     return 0;
 }
