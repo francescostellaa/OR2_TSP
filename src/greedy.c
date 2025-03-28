@@ -5,8 +5,9 @@
  * repeated greedy algorithm with different initial points
  * @param inst instance with the nodes
  * @param run_2opt flag to run the 2-opt refinement. If 1, the 2-opt refinement is applied
+ * @param timelimit
  */
-int greedy_multi_start(instance* inst, int run_2opt) {
+int greedy_multi_start(instance* inst, int run_2opt, double timelimit) {
 
     if (inst == NULL) {
         print_error("Error in initialization of the instance\n");
@@ -25,7 +26,7 @@ int greedy_multi_start(instance* inst, int run_2opt) {
     int n = inst->nnodes;
 
     for (int i = 1; i < n; i++) {
-        if(second() - inst->tstart > inst->timelimit) {
+        if(second() - inst->tstart > timelimit) {
             if ( VERBOSE >= 100 ) { printf("Time limit reached\n"); }
             break;
         }
@@ -81,8 +82,8 @@ int greedy(int initial_point, tour* solution, int run_2opt, const instance* inst
         return -1;
     }
 
-    int n = inst->nnodes;
-    for (int i = 0; i < n; i++) {
+    const int n = inst->nnodes;
+    for (int i = 0; i < inst->nnodes; i++) {
         solution->path[i] = i;
     }
     swap(solution->path, 0, initial_point);
