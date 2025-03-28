@@ -9,7 +9,6 @@ void two_opt(tour* solution, const instance* inst) {
     int improvement = 1;
     while (improvement) {
         if(second() - inst->tstart > inst->timelimit) {
-            if ( VERBOSE >= 100 ) { printf("Time limit reached\n"); }
             break;
         }
 

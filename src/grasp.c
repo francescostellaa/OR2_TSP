@@ -84,7 +84,7 @@ int grasp(int initial_point, instance* inst) {
     solution->cost += inst->cost_matrix[solution->path[n - 1] * n + solution->path[n]];
 
     // Save the cost of the current solution
-    save_history_cost(solution->cost);
+    save_history_cost(solution->cost, "../data/GRASP/cost_grasp.txt");
 
     // Local Search Phase (2-opt heuristic)
     two_opt(solution, inst);
@@ -111,12 +111,12 @@ int grasp_multi_start(instance* inst) {
             break;
         }
         grasp(i, inst);
-        save_history_incumbent(inst->best_sol->cost);
+        save_history_incumbent(inst->best_sol->cost, "../data/GRASP/incumbent_grasp.txt");
     }
 
     plot_solution(inst, inst->best_sol->path);
-    plot_incumbent();
-    plot_history_cost();
+    plot_incumbent("../data/GRASP/incumbent_grasp.txt", "../data/GRASP/incumbent_grasp.png");
+    plot_history_cost("../data/GRASP/cost_grasp.txt", "../data/GRASP/cost_grasp.png");
     if(VERBOSE >= 1) { printf("Best cost: %lf\n", inst->best_sol->cost); }
 
     return 0;

@@ -78,14 +78,14 @@ int tabu(const instance* inst, tour* solution, double timelimit) {
             current_best_cost = solution->cost;
         }
 
-        save_history_incumbent(current_best_cost);
-        save_history_cost(solution->cost);
+        save_history_incumbent(current_best_cost, "../data/TABU/incumbent_tabu.txt");
+        save_history_cost(solution->cost, "../data/TABU/cost_tabu.txt");
     }
 
     plot_solution(inst, solution->path);
-    plot_incumbent();
-    plot_history_cost();
-    plot_incumbent_and_costs();
+    plot_incumbent("../data/TABU/incumbent_tabu.txt", "../data/TABU/incumbent_tabu.png");
+    plot_history_cost("../data/TABU/cost_tabu.txt", "../data/TABU/cost_tabu.png");
+    plot_incumbent_and_costs("../data/TABU/cost_tabu.txt", "../data/TABU/incumbent_tabu.txt", "../data/TABU/incumbent_and_costs_tabu.png");
     free(when_tabu);
 
     memcpy(solution->path, best_solution->path, (n + 1) * sizeof(int));

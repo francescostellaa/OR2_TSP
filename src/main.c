@@ -5,16 +5,6 @@
 #include <grasp.h>
 
 
-void print_menu() {
-    printf("\nSelect the algorithm to run:\n");
-    printf("1 - Nearest Neighbor\n");
-    printf("2 - Nearest Neighbor + 2-OPT Refinement\n");
-    printf("3 - Variable Neighborhood Search (VNS)\n");
-    printf("4 - Tabu Search\n");
-    printf("5 - Grasp Multi-Start\n");
-    printf("Enter your choice: ");
-}
-
 int main(int argc, char **argv) {
     if ( argc < 2 ) { printf("Wrong command line parameters\n"); exit(1); }       
 	if ( VERBOSE >= 2 ) { for (int a = 0; a < argc; a++) printf("%s ", argv[a]); printf("\n"); }
@@ -39,20 +29,11 @@ int main(int argc, char **argv) {
     compute_all_costs(&inst);
     if ( VERBOSE >= 4000 ) { printf("Costs computed!\n"); }
 
-    int choice;
-    print_menu();
-
-    if (scanf("%d", &choice) != 1) {
-        printf("Invalid input.\n");
-        free_instance(&inst);
-        exit(1);
-    }
-
     double t1 = second(); // Start time
     inst.tstart = t1;
     srand(inst.seed);   //Set the random seed
     
-    switch (choice) {
+    switch (alg) {
         case 1:
             if (VERBOSE >= 1) { printf("Running Greedy Multi-Start...\n"); }
             if (greedy_multi_start(&inst, 0)) {

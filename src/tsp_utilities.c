@@ -1,10 +1,24 @@
 #include <tsp_utilities.h>
 
+int alg = -1;
+
 /**
  * Print error message and exit the program
  * @param err error message
  */
 void print_error(const char *err) { printf("\n\n ERROR: %s \n\n", err); fflush(NULL); exit(1); } 
+
+/**
+ * Print the menu for the algorithm selection
+ */
+void print_menu() {
+    printf("\nAvailable algorithms:\n");
+    printf("1 - Nearest Neighbor\n");
+    printf("2 - Nearest Neighbor + 2-OPT Refinement\n");
+    printf("3 - Variable Neighborhood Search (VNS)\n");
+    printf("4 - Tabu Search\n");
+    printf("5 - Grasp Multi-Start\n");
+}
 
 /**
  * Free the instance memory
@@ -127,6 +141,7 @@ void parse_command_line(int argc, char** argv, instance *inst) {
 
     int help = 0; if ( argc < 1 ) help = 1;// if no parameters, print help
     int node_flag = 1, number_nodes = 0;
+    int alg_choice = -1;
 	for ( int i = 1; i < argc; i++ ) { 
         if ( strcmp(argv[i],"-file") == 0 ) { strcpy(inst->input_file,argv[++i]); node_flag = 0; continue; }
 		if ( strcmp(argv[i],"-input") == 0 ) { strcpy(inst->input_file,argv[++i]); node_flag = 0; continue; }
@@ -140,9 +155,23 @@ void parse_command_line(int argc, char** argv, instance *inst) {
             number_nodes = abs(atoi(argv[i])); 
             continue;
         }
-        if ( strcmp(argv[i],"-help") == 0 ) { help = 1; continue; }
-		if ( strcmp(argv[i],"--help") == 0 ) { help = 1; continue; } 
-        help = 1;
+        if ( strcmp(argv[i],"-alg") == 0 ) { alg_choice = atoi(argv[++i]); continue; }
+        if ( strcmp(argv[i],"-help") == 0 || strcmp(argv[i],"--help") == 0 ) { 
+            help = 1; 
+            break; 
+        }
+    }
+
+    if (help) {
+        printf("\n\nAvailable parameters-------------------------------------------------------------------------\n");
+        printf("-file <filename>       : Input file containing TSP instance\n");
+        printf("-time_limit <value>    : Time limit for the algorithm (in seconds)\n");
+        printf("-seed <value>          : Random seed for reproducibility\n");
+        printf("-nodes <value>         : Number of nodes (if no input file is provided)\n");
+        printf("-alg <algorithm>       : Algorithm choice (1: GREEDY, 2: GREEDY+2OPT, 3: VNS, 4: TABU, 5: GRASP)\n");
+        printf("-help or --help        : Display this help message\n");
+        printf("----------------------------------------------------------------------------------------------\n\n");
+        exit(0); 
     }
 
     if (node_flag) { 
@@ -152,19 +181,13 @@ void parse_command_line(int argc, char** argv, instance *inst) {
         }
     }
 
-    if ( help || (VERBOSE >= 10) ) {
-		printf("\n\nAvailable parameters-------------------------------------------------------------------------\n");
-		printf("-file %s\n", inst->input_file); 
-		printf("-time_limit %lf\n", inst->timelimit); 
-		printf("-seed %d\n", inst->seed); 
-        if (node_flag){
-            printf("-nodes %d\n", inst->nnodes);
-        }
-		printf("\n enter -help or --help for help\n");
-		printf("----------------------------------------------------------------------------------------------\n\n");
-	}        
+    if (alg_choice < 1 || alg_choice > 5) {
+        print_error("Algorithm choice not defined or out of range\n");
+    } else {
+        alg = alg_choice;
+        printf("Algorithm choice: %d\n", alg);
+    }        
 	
-	if ( help ) exit(1);
 }
 
 /**
@@ -370,8 +393,9 @@ void plot_solution(const instance *inst, int* solution) {
 /**
  * Save the history of the incumbent solution
  * @param best_cost cost of the best solution
+ * @param filename name of the file to save the history
  */
-void save_history_incumbent(double best_cost) {
+void save_history_incumbent(double best_cost, const char* filename) {
     static int first_call = 0;
     static int iteration_counter = 0;
 
@@ -379,10 +403,10 @@ void save_history_incumbent(double best_cost) {
 
     // First call: erase file contents
     if (!first_call) {
-        file = fopen("../data/incumbent.txt", "w");
+        file = fopen(filename, "w");
         first_call = 1;
     } else {
-        file = fopen("../data/incumbent.txt", "a");
+        file = fopen(filename, "a");
     }
 
     if (file == NULL) {
@@ -399,8 +423,9 @@ void save_history_incumbent(double best_cost) {
 /**
  * Save the history of the cost
  * @param cost cost of the solution
+ * @param filename name of the file to save the history
  */
-void save_history_cost(double cost) {
+void save_history_cost(double cost, const char* filename) {
     static int first_call = 0;
     static int iteration_counter = 0;
 
@@ -408,10 +433,10 @@ void save_history_cost(double cost) {
 
     // First time opening the file, erase its content
     if (!first_call) {
-        file = fopen("../data/cost.txt", "w");
+        file = fopen(filename, "w");
         first_call = 1;
     } else {
-        file = fopen("../data/cost.txt", "a");
+        file = fopen(filename, "a");
     }
 
     if (file == NULL) {
@@ -426,8 +451,10 @@ void save_history_cost(double cost) {
 
 /**
  * Plot the history of the cost
+ * @param input_filename file with the cost history
+ * @param output_filename name of the output file
  */
-void plot_history_cost() {
+void plot_history_cost(const char *input_filename, const char *output_filename) {
     FILE *gnuplot = popen("gnuplot -persist", "w");
     if (gnuplot == NULL) {
         printf("Error opening gnuplot\n");
@@ -436,7 +463,7 @@ void plot_history_cost() {
 
     // Set up Gnuplot settings
     fprintf(gnuplot, "set terminal pngcairo enhanced color font 'Helvetica,12' size 1080,720\n");
-    fprintf(gnuplot, "set output '../data/cost_evolution.png'\n");
+    fprintf(gnuplot, "set output '%s'\n", output_filename);
     fprintf(gnuplot, "set title 'Evolution of Best Solution' font 'Helvetica,16'\n");
 
     fprintf(gnuplot, "set xlabel 'Iteration'\n");
@@ -447,7 +474,7 @@ void plot_history_cost() {
     fprintf(gnuplot, "set style line 1 lc rgb '#FF0000' lt 1 lw 2 pt 7 ps 1.5\n");
 
     // Plot command, reading from the file
-    fprintf(gnuplot, "plot '../data/cost.txt' using 1:2 with lines ls 1 title 'Cost evolution'\n");
+    fprintf(gnuplot, "plot  \"%s\" using 1:2 with lines ls 1 title 'Cost evolution'\n", input_filename);
 
     fflush(gnuplot);
     pclose(gnuplot);
@@ -455,8 +482,10 @@ void plot_history_cost() {
 
 /**
  * Plot the evolution of the incumbent solution for the TSP
+ * @param input_filename file with the incumbent history
+ * @param output_filename name of the output file
  */
-void plot_incumbent() {
+void plot_incumbent(const char *input_filename, const char *output_filename) {
     FILE *gnuplot = popen("gnuplot -persist", "w");
     if (gnuplot == NULL) { 
         printf("Error opening gnuplot\n");
@@ -465,7 +494,7 @@ void plot_incumbent() {
 
     // Set up Gnuplot settings
     fprintf(gnuplot, "set terminal pngcairo enhanced color font 'Helvetica,12' size 1080,720\n");  
-    fprintf(gnuplot, "set output '../data/solution_evolution.png'\n");
+    fprintf(gnuplot, "set output '%s'\n", output_filename);
     fprintf(gnuplot, "set title 'Evolution of Best Solution' font 'Helvetica,16'\n");
     
     fprintf(gnuplot, "set xlabel 'Iteration'\n");
@@ -476,13 +505,19 @@ void plot_incumbent() {
     fprintf(gnuplot, "set style line 1 lc rgb '#FF0000' lt 1 lw 2 pt 7 ps 1.5\n");
 
     // Plot command, reading from the file
-    fprintf(gnuplot, "plot '../data/incumbent.txt' using 1:2 with lines ls 1 title 'Best Cost'\n");
+    fprintf(gnuplot, "plot  \"%s\" using 1:2 with lines ls 1 title 'Cost evolution'\n", input_filename);
 
     fflush(gnuplot);
     pclose(gnuplot);  // Close Gnuplot properly
 }
 
-void plot_incumbent_and_costs() {
+/**
+ * Plot the evolution of the incumbent solution and the cost
+ * @param cost_filename file with the cost history
+ * @param incumbent_filename file with the incumbent history
+ * @param output_filename name of the output file
+ */
+void plot_incumbent_and_costs(const char *cost_filename, const char *incumbent_filename, const char *output_filename) {
     FILE *gnuplot = popen("gnuplot -persist", "w");
     if (gnuplot == NULL) { 
         printf("Error opening gnuplot\n");
@@ -492,7 +527,7 @@ void plot_incumbent_and_costs() {
     // Set up Gnuplot settings
     //fprintf(gnuplot, "set terminal pngcairo enhanced color font 'Helvetica,12'\n");  
     fprintf(gnuplot, "set terminal pngcairo enhanced color font 'Helvetica,12' size 1080,720\n"); 
-    fprintf(gnuplot, "set output '../data/complete_solution_evolution.png'\n");
+    fprintf(gnuplot, "set output '%s'\n", output_filename);
     fprintf(gnuplot, "set title 'Evolution of Best Solution' font 'Helvetica,16'\n");
     
     fprintf(gnuplot, "set xlabel 'Iteration'\n");
@@ -504,11 +539,8 @@ void plot_incumbent_and_costs() {
     fprintf(gnuplot, "set style line 2 lc rgb '#FF0000' lt 1 lw 3 pt 7 ps 1.5\n"); 
 
     // Plot both files
-    fprintf(gnuplot, "plot '../data/cost.txt' using 1:2 with lines ls 1 title 'Cost', \\\n");
-    fprintf(gnuplot, "     '../data/incumbent.txt' using 1:2 with lines ls 2 title 'Best Cost'\n");
+    fprintf(gnuplot, "plot \"%s\" using 1:2 with lines ls 1 title 'Cost', \"%s\" using 1:2 with lines ls 2 title 'Best Cost'\n", cost_filename, incumbent_filename);
 
     fflush(gnuplot);
     pclose(gnuplot);
 }
-
-

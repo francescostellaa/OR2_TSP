@@ -52,6 +52,13 @@ typedef struct {
 
 } instance;
 
+// Algorithm choice
+// 1: Greedy
+// 2: Greedy + 2-OPT
+// 3: VNS
+// 4: Tabu Search
+// 5: GRASP
+extern int alg;
 
 void free_instance(instance *inst);
 void read_input(instance *inst);
@@ -68,10 +75,10 @@ double dist2(int i, int j, instance *inst);
 void swap(int* arr, int i, int j);
 void reverse_segment(int* solution_path, int i, int j);
 void compute_solution_cost(tour* solution, const instance* inst);
-void save_history_incumbent(double best_cost);
-void plot_incumbent();
-void save_history_cost(double cost);
-void plot_history_cost();
-void plot_incumbent_and_costs();
+void save_history_incumbent(double best_cost, const char* filename);
+void plot_incumbent(const char *input_filename, const char *output_filename);
+void save_history_cost(double cost, const char* filename);
+void plot_history_cost(const char *input_filename, const char *output_filename);
+void plot_incumbent_and_costs(const char *cost_filename, const char *incumbent_filename, const char *output_filename);
 
 #endif // TSP_UTILITIES_H

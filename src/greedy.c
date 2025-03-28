@@ -46,15 +46,16 @@ int greedy_multi_start(instance* inst, int run_2opt) {
         if (greedy(i, solution, run_2opt, inst) == 0) {
             update_best_sol(inst, solution);
         }
-        save_history_incumbent(inst->best_sol->cost);
+        save_history_cost(solution->cost, "../data/NN/cost_greedy.txt");
+        save_history_incumbent(inst->best_sol->cost, "../data/NN/incumbent_greedy.txt");
         free(solution->path);
         free(solution);
     }
 
     plot_solution(inst, inst->best_sol->path);
-    plot_incumbent();
-    plot_history_cost();
-    plot_incumbent_and_costs();
+    plot_incumbent("../data/NN/incumbent_greedy.txt", "../data/NN/incumbent_greedy.png");
+    plot_history_cost("../data/NN/cost_greedy.txt", "../data/NN/cost_greedy.png");
+    plot_incumbent_and_costs("../data/NN/cost_greedy.txt", "../data/NN/incumbent_greedy.txt", "../data/NN/incumbent_and_costs_greedy.png");
     if(VERBOSE >= 1) { printf("Best cost: %lf\n", inst->best_sol->cost); }
 
     return 0;
@@ -105,6 +106,6 @@ int greedy(int initial_point, tour* solution, int run_2opt, const instance* inst
     if (run_2opt){
         two_opt(solution, inst);
     }
-    save_history_cost(solution->cost);
+    
     return 0;
 }
