@@ -23,6 +23,7 @@ int grasp(int initial_point, const instance* inst, tour* solution) {
         solution->path[i] = i;
     }
     swap(solution->path, 0, initial_point); // Start from the initial point
+    int n = inst->nnodes;
 
     // Constructive Phase
     for (int i = 0; i < inst->nnodes - 1; i++) {

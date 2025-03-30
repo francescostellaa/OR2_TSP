@@ -5,11 +5,6 @@
 #include <greedy.h>
 #include <stdbool.h>
 
-//#define TENURE 18
-
-typedef struct {
-    int i, j;
-} tabu_move;
 
 int tabu(const instance* inst, tour* solution, double timelimit);
 

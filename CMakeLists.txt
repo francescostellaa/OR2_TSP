@@ -22,6 +22,9 @@ set(CPLEXDIR /Applications/CPLEX_Studio2211/cplex)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -I${CPLEXDIR}/include/ilcplex")
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -L${CPLEXDIR}/lib/arm64_osx/static_pic -L. -lcplex -lpthread -ldl")
 
+# Find and link pthreads
+find_package(Threads REQUIRED)
+
 # Add source files
 add_executable(tsp
     src/main.c
@@ -31,11 +34,12 @@ add_executable(tsp
     src/k_opt.c
     src/vns.c
     src/grasp.c
-        src/tabu.c
-        include/tabu.h
+    src/tabu.c
+    src/performance_profile.c
 )
 
 # target_link_libraries( ${PROJECT_NAME} ${OpenCV_LIBS} ${Boost_FILESYSTEM_LIBRARY})
 target_link_libraries(tsp PRIVATE ${CPLEX_LIBRARIES} dl m)
+target_link_libraries(tsp PRIVATE Threads::Threads)
 
 include(CPack)

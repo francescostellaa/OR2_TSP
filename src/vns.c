@@ -7,8 +7,8 @@
  * @param timelimit
  * @return zero on success, non-zero on failures
  */
-int vns(const instance* inst, tour* solution, double timelimit) {
-
+int vns(const instance* inst, tour* solution, double timelimit, int num_kicks) {
+    printf("Num Kicks = %d\n", num_kicks);
     int n = inst->nnodes;
 
     int k = 1; 
@@ -37,7 +37,7 @@ int vns(const instance* inst, tour* solution, double timelimit) {
 
             if (k == 2) {
 
-                for (int i = 0; i < 5; i++) {
+                for (int i = 0; i < num_kicks; i++) {
                     do {
                         indices_to_kick[0] = rand() % (n - 3);
                         indices_to_kick[1] = indices_to_kick[0] + 1 + (rand() % (n - indices_to_kick[0] - 3));
@@ -103,4 +103,79 @@ int vns(const instance* inst, tour* solution, double timelimit) {
     plot_incumbent_and_costs("../data/VNS/cost_vns.txt", "../data/VNS/incumbent_vns.txt", "../data/VNS/incumbent_and_costs_vns.png");
 
     return 0;
+}
+
+
+int vns_multiparam(instance* inst, tour* solution, double timelimit, int* num_kicks_params, int num_kicks_size, char* output_file) {
+
+    if (inst == NULL) {
+        print_error("Error in initialization of the instance\n");
+        return 1;
+    }
+
+    double* best_costs = (double*)malloc(sizeof(double) * num_kicks_size);
+
+    for (int i = 0; i < num_kicks_size; i++){
+        int k = num_kicks_params[i];
+
+        tour* solution_copy = malloc(sizeof(tour));
+        solution_copy->path = (int*)malloc((inst->nnodes + 1) * sizeof(int));
+        memcpy(solution_copy->path, solution->path, (inst->nnodes + 1) * sizeof(int));
+        solution_copy->cost = solution->cost;
+
+        inst->tstart = second();
+
+        if (vns(inst, solution_copy, timelimit, k)) {
+            free(solution_copy->path);
+            free(solution_copy);
+            return 1;
+        } 
+
+        best_costs[i] = solution_copy->cost;
+
+        free(solution_copy->path);
+        free(solution_copy);
+    }
+
+    printf("Best costs for different number of kicks:\n");
+    for (int i = 0; i < num_kicks_size; i++) {
+        printf("num_kicks = %d: %.2f\n", num_kicks_params[i], best_costs[i]);
+    }
+    printf("\n");
+    printf("Writing results to file: %s\n", output_file);
+
+    char* output_line = (char*)malloc(256 * sizeof(char)); 
+    output_line[0] = '\0'; 
+
+    char seed_buffer[32];
+    snprintf(seed_buffer, sizeof(seed_buffer), "inst%d;", inst->seed);
+    strcat(output_line, seed_buffer);
+
+    for (int i = 0; i < num_kicks_size; i++) {
+        char buffer[32];
+        snprintf(buffer, sizeof(buffer), "%.2f", best_costs[i]);
+        strcat(output_line, buffer);
+        if (i < num_kicks_size - 1) {
+            strcat(output_line, ";");
+        }
+    }
+
+    strcat(output_line, "\n");
+
+    printf("%s\n", output_line);
+    FILE *file = fopen(output_file, "a");
+
+    if (file == NULL) {
+        perror("Error opening file");
+        return 1;
+    }
+
+    fprintf(file, "%s", output_line);
+    fclose(file);
+    
+    free(best_costs);
+    free(output_line);
+
+    return 0;
+
 }

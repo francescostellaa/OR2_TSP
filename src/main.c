@@ -3,6 +3,7 @@
 #include <vns.h>
 #include <tabu.h>
 #include <grasp.h>
+#include <performance_profile.h>
 
 
 int main(int argc, char **argv) {
@@ -34,6 +35,12 @@ int main(int argc, char **argv) {
     srand(inst.seed);   //Set the random seed
     
     switch (alg) {
+        case 0:
+            if (VERBOSE >= 1) { printf("Running Performance Profile...\n"); }
+            if (performance_profile()) {
+                print_error("Error in performance profile\n");
+            }
+            break;
         case 1:
             if (VERBOSE >= 1) { printf("Running Greedy Multi-Start...\n"); }
             if (greedy_multi_start(&inst, 0, inst.timelimit)) {
@@ -52,7 +59,7 @@ int main(int argc, char **argv) {
             solution_vns->path = (int*)malloc((inst.nnodes + 1) * sizeof(int));
             solution_vns->cost = 0.0;
             greedy(rand() % inst.nnodes, solution_vns, 0, &inst);
-            if (vns(&inst, solution_vns, inst.timelimit)) {
+            if (vns(&inst, solution_vns, inst.timelimit, 5)) {
                 print_error("Error in vns\n");
             }
             update_best_sol(&inst, solution_vns);

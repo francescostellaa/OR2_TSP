@@ -7,6 +7,7 @@
 #include <greedy.h>
 #include <k_opt.h>
 
-int vns(const instance* inst, tour* solution, double timelimit);
+int vns(const instance* inst, tour* solution, double timelimit, int num_kicks);
+int vns_multiparam(instance* inst, tour* solution, double timelimit, int* num_kicks_params, int num_kicks_size, char* output_file);
 
 #endif // VNS_H

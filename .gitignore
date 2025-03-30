@@ -6,6 +6,8 @@ data/*.png
 cmake-build-debug
 .idea
 data/*.txt
+data/*.pdf
 data/NN
 data/TABU
 data/VNS
+data/perfprof/

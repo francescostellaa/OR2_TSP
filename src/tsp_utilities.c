@@ -183,7 +183,7 @@ void parse_command_line(int argc, char** argv, instance *inst) {
         }
     }
 
-    if (alg_choice < 1 || alg_choice > 5) {
+    if (alg_choice < 0 || alg_choice > 5) {
         print_error("Algorithm choice not defined or out of range\n");
     } else {
         alg = alg_choice;

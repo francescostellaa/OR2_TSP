@@ -9,7 +9,7 @@
 #include <cplex.h>
 
 // Verbosity level
-#define VERBOSE 1001
+#define VERBOSE 100
 
 // Constants
 #define MAX_BOUNDARY 10000
