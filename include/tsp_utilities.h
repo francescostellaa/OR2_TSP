@@ -13,7 +13,7 @@
 
 // Constants
 #define MAX_BOUNDARY 10000
-#define EPS_COST 1e-9
+#define EPS_COST 1e-8
 #define INF_COST 1e38
 
 /**
