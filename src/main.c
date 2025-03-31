@@ -3,18 +3,17 @@
 #include <vns.h>
 #include <tabu.h>
 #include <grasp.h>
-#include <performance_profile.h>
-
 
 int main(int argc, char **argv) {
     if ( argc < 2 ) { printf("Wrong command line parameters\n"); exit(1); }       
 	if ( VERBOSE >= 2 ) { for (int a = 0; a < argc; a++) printf("%s ", argv[a]); printf("\n"); }
     
     instance inst;
+    parameters params;
     if ( VERBOSE >= 4000 ) { printf("Instance allocated!\n"); }
     
     // Parse the command line parameters
-    parse_command_line(argc, argv, &inst);
+    parse_command_line(argc, argv, &inst, &params);
     if ( VERBOSE >= 4000 ) { printf("Parse completed!\n"); }
 
     // Read the input file if it is defined otherwise generate random coordinates
@@ -35,12 +34,6 @@ int main(int argc, char **argv) {
     srand(inst.seed);   //Set the random seed
     
     switch (alg) {
-        case 0:
-            if (VERBOSE >= 1) { printf("Running Performance Profile...\n"); }
-            if (performance_profile()) {
-                print_error("Error in performance profile\n");
-            }
-            break;
         case 1:
             if (VERBOSE >= 1) { printf("Running Greedy Multi-Start...\n"); }
             if (greedy_multi_start(&inst, 0, inst.timelimit)) {
@@ -59,7 +52,7 @@ int main(int argc, char **argv) {
             solution_vns->path = (int*)malloc((inst.nnodes + 1) * sizeof(int));
             solution_vns->cost = 0.0;
             greedy(rand() % inst.nnodes, solution_vns, 0, &inst);
-            if (vns(&inst, solution_vns, inst.timelimit, 5)) {
+            if (vns(&inst, solution_vns, inst.timelimit, params.num_kicks)) {
                 print_error("Error in vns\n");
             }
             update_best_sol(&inst, solution_vns);
@@ -74,7 +67,7 @@ int main(int argc, char **argv) {
             solution_tabu->cost = 0.0;
             greedy(rand() % inst.nnodes, solution_tabu, 0, &inst);
 
-            if (tabu(&inst, solution_tabu, inst.timelimit)) {
+            if (tabu(&inst, solution_tabu, inst.timelimit, params.interval_tenure)) {
                 print_error("Error in tabu\n");
             }
             update_best_sol(&inst, solution_tabu);

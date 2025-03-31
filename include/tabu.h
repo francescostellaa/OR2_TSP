@@ -6,7 +6,8 @@
 #include <stdbool.h>
 
 
-int tabu(const instance* inst, tour* solution, double timelimit);
+int tabu(const instance* inst, tour* solution, double timelimit, int interval_tenure);
+int tabu_multiparam(instance* inst, tour* solution, double timelimit, int* interval_tenure_params, int interval_tenure_size, char* output_file);
 
 
 #endif //TABU_H

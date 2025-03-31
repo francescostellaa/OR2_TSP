@@ -127,7 +127,7 @@ void read_input(instance *inst) {
  * @param argv array of parameters
  * @param inst instance to be set
  */
-void parse_command_line(int argc, char** argv, instance *inst) { 
+void parse_command_line(int argc, char** argv, instance *inst, parameters *params) { 
 	
 	if ( VERBOSE >= 100 ) printf("Running %s with %d parameters!\n", argv[0], argc-1);
     
@@ -140,6 +140,9 @@ void parse_command_line(int argc, char** argv, instance *inst) {
     inst->best_sol = (tour*)malloc(sizeof(tour));
     inst->best_sol->path = NULL;
     inst->best_sol->cost = INF_COST;
+
+    params->num_kicks = 5;
+    params->interval_tenure = 100;
 
     int help = 0; if ( argc < 1 ) help = 1;// if no parameters, print help
     int node_flag = 1, number_nodes = 0;
@@ -158,6 +161,16 @@ void parse_command_line(int argc, char** argv, instance *inst) {
             continue;
         }
         if ( strcmp(argv[i],"-alg") == 0 ) { alg_choice = atoi(argv[++i]); continue; }
+        if ( strcmp(argv[i],"-num_kicks") == 0 ) { 
+            params->num_kicks = atoi(argv[++i]); 
+            if (params->num_kicks < 0) { print_error("Error: num_kicks must be greater or equal than 0\n"); }
+            continue; 
+        }
+        if ( strcmp(argv[i],"-interval_tenure") == 0 ) { 
+            params->interval_tenure = atoi(argv[++i]); 
+            if (params->interval_tenure < 1) { print_error("Error: interval_tenure must be greater or equal than 0\n"); }
+            continue; 
+        }
         if ( strcmp(argv[i],"-help") == 0 || strcmp(argv[i],"--help") == 0 ) { 
             help = 1; 
             break; 

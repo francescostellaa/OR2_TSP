@@ -58,9 +58,19 @@ typedef struct {
 // 5: GRASP
 extern int alg;
 
+/*
+ * Parameters for the algorithms
+ */
+typedef struct {
+
+    int num_kicks;
+    int interval_tenure;
+    
+} parameters;
+
 void free_instance(instance *inst);
 void read_input(instance *inst);
-void parse_command_line(int argc, char** argv, instance *inst);
+void parse_command_line(int argc, char** argv, instance *inst, parameters *params);
 double random01();
 void random_instance_generator(instance *inst);
 void plot_solution(const instance *inst, int* solution);

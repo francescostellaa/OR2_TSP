@@ -1,7 +1,7 @@
 #include "tabu.h"
 
-int tabu(const instance* inst, tour* solution, double timelimit) {
-
+int tabu(const instance* inst, tour* solution, double timelimit, int interval_tenure) {
+    printf("Interval Tenure = %d\n", interval_tenure);
     if (inst->best_sol->path == NULL) {
         print_error("Error occurred while allocating memory for the instance\n");
         return -1;
@@ -62,7 +62,7 @@ int tabu(const instance* inst, tour* solution, double timelimit) {
             }
         }
 
-        if (iteration % 100 == 0) {
+        if (iteration % interval_tenure == 0) {
             tenure = (int)(sqrt(inst->nnodes) + rand() % (int)(inst->nnodes / sqrt(inst->nnodes) + 1));
         }
         iteration++;
@@ -93,4 +93,72 @@ int tabu(const instance* inst, tour* solution, double timelimit) {
     free(best_solution->path);
     free(best_solution);
     return 0;
+}
+
+
+int tabu_multiparam(instance* inst, tour* solution, double timelimit, int* interval_tenure_params, int interval_tenure_size, char* output_file) {
+
+    if (inst == NULL) {
+        print_error("Error in initialization of the instance\n");
+        return 1;
+    }
+
+    double* best_costs = (double*)malloc(sizeof(double) * interval_tenure_size);
+
+    for (int i = 0; i < interval_tenure_size; i++){
+        int k = interval_tenure_params[i];
+
+        tour* solution_copy = malloc(sizeof(tour));
+        solution_copy->path = (int*)malloc((inst->nnodes + 1) * sizeof(int));
+        memcpy(solution_copy->path, solution->path, (inst->nnodes + 1) * sizeof(int));
+        solution_copy->cost = solution->cost;
+
+        inst->tstart = second();
+
+        if (tabu(inst, solution_copy, timelimit, k)) {
+            free(solution_copy->path);
+            free(solution_copy);
+            return 1;
+        } 
+
+        best_costs[i] = solution_copy->cost;
+
+        free(solution_copy->path);
+        free(solution_copy);
+    }
+
+    char* output_line = (char*)malloc(256 * sizeof(char)); 
+    output_line[0] = '\0'; 
+
+    char seed_buffer[32];
+    snprintf(seed_buffer, sizeof(seed_buffer), "inst%d;", inst->seed);
+    strcat(output_line, seed_buffer);
+
+    for (int i = 0; i < interval_tenure_size; i++) {
+        char buffer[32];
+        snprintf(buffer, sizeof(buffer), "%.2f", best_costs[i]);
+        strcat(output_line, buffer);
+        if (i < interval_tenure_size - 1) {
+            strcat(output_line, ";");
+        }
+    }
+
+    strcat(output_line, "\n");
+
+    printf("%s\n", output_line);
+    FILE *file = fopen(output_file, "a");
+
+    if (file == NULL) {
+        perror("Error opening file");
+        return 1;
+    }
+
+    fprintf(file, "%s", output_line);
+    fclose(file);
+    
+    free(best_costs);
+    free(output_line);
+
+    return 0;
+
 }
