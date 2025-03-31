@@ -10,4 +10,5 @@ data/*.pdf
 data/NN
 data/TABU
 data/VNS
-data/perfprof/
+perfprof/*.pdf
+perfprof/*.csv

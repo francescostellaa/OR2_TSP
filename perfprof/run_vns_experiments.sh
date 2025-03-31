@@ -3,11 +3,11 @@
 # Configurations
 BUILD_DIR="../build"  
 EXECUTABLE="$BUILD_DIR/tsp"
-TIME_LIMIT=2
+TIME_LIMIT=60 # seconds
 SEED=0
 NODES=1000
 NUM_KICKS_LIST=(0 3 5 7 10 15)  
-NUM_INSTANCES=10
+NUM_INSTANCES=50
 OUTPUT_FILE="results_vns.csv"
 
 # Check if the executable exists
