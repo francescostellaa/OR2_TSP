@@ -6,7 +6,11 @@ int alg = -1;
  * Print error message and exit the program
  * @param err error message
  */
-void print_error(const char *err) { printf("\n\n ERROR: %s \n\n", err); fflush(NULL); exit(1); } 
+void print_error(const char *err) {
+     printf("\n\n ERROR: %s \n\n", err); 
+     fflush(NULL); 
+     exit(1); 
+} 
 
 /**
  * Print the menu for the algorithm selection
@@ -143,6 +147,7 @@ void parse_command_line(int argc, char** argv, instance *inst, parameters *param
 
     params->num_kicks = 5;
     params->interval_tenure = 100;
+    params->tenure_scaling = 3;
 
     int help = 0; if ( argc < 1 ) help = 1;// if no parameters, print help
     int node_flag = 1, number_nodes = 0;
@@ -169,6 +174,13 @@ void parse_command_line(int argc, char** argv, instance *inst, parameters *param
         if ( strcmp(argv[i],"-interval_tenure") == 0 ) { 
             params->interval_tenure = atoi(argv[++i]); 
             if (params->interval_tenure < 1) { print_error("Error: interval_tenure must be greater or equal than 0\n"); }
+            continue; 
+        }
+        if ( strcmp(argv[i],"-tenure_scaling") == 0 ) { 
+            params->tenure_scaling = atof(argv[++i]); 
+            if (params->tenure_scaling < 0 || params->tenure_scaling > 1) { 
+                print_error("Error: tenure_scaling must be between 0 and 1\n"); 
+            }
             continue; 
         }
         if ( strcmp(argv[i],"-help") == 0 || strcmp(argv[i],"--help") == 0 ) { 

@@ -35,6 +35,7 @@ add_executable(tsp
     src/vns.c
     src/grasp.c
     src/tabu.c
+    src/cplex_model.c
 )
 
 # target_link_libraries( ${PROJECT_NAME} ${OpenCV_LIBS} ${Boost_FILESYSTEM_LIBRARY})

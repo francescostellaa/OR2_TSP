@@ -17,7 +17,7 @@ if [ ! -f "$EXECUTABLE" ]; then
 fi
 
 # Create CSV header
-echo -n "${#NUM_KICKS_LIST[@]}"; > $OUTPUT_FILE
+echo -n "${#NUM_KICKS_LIST[@]};" >> $OUTPUT_FILE
 for NK in "${NUM_KICKS_LIST[@]}"; do
     echo -n "vns_${NK};" >> $OUTPUT_FILE
 done

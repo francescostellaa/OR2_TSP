@@ -3,6 +3,7 @@
 #include <vns.h>
 #include <tabu.h>
 #include <grasp.h>
+#include <cplex_model.h>
 
 int main(int argc, char **argv) {
     if ( argc < 2 ) { printf("Wrong command line parameters\n"); exit(1); }       
@@ -67,7 +68,7 @@ int main(int argc, char **argv) {
             solution_tabu->cost = 0.0;
             greedy(rand() % inst.nnodes, solution_tabu, 0, &inst);
 
-            if (tabu(&inst, solution_tabu, inst.timelimit, params.interval_tenure)) {
+            if (tabu(&inst, solution_tabu, inst.timelimit, params.interval_tenure, params.tenure_scaling)) {
                 print_error("Error in tabu\n");
             }
             update_best_sol(&inst, solution_tabu);
@@ -79,6 +80,12 @@ int main(int argc, char **argv) {
             if (VERBOSE >= 1) { printf("Running Grasp Multi-Start...\n"); }
             if (grasp_multi_start(&inst, inst.timelimit)) {
                 print_error("Error in grasp_multi_start\n");
+            }
+            break;
+        case 6:
+            if (VERBOSE >= 1) { printf("Running CPLEX...\n"); }
+            if (TSPopt(&inst)) {
+                print_error("Error in TSPopt\n");
             }
             break;
         default:

@@ -17,10 +17,13 @@ dashes = ['-',  # solid line
 	'-.',  # dash-dot line
 	':',  # dotted line
 	'-',
-	'--']
+	'--',
+	'-.',
+	':']  # dotted line
 
-markers = ['+', 'x', 's', '^', 'o', 'd']
-colors = ['r', 'b', 'y', 'g', 'm', 'c']
+
+markers = ['+', 'x', 's', '^', 'o', 'd', '*', 'v']
+colors = ['r', 'b', 'y', 'g', 'm', 'c', 'k', 'orange']
 
 
 class CmdLineParser(object):
@@ -122,4 +125,4 @@ def main():
 if __name__ == '__main__':
 	main()
 
-# python perfprof.py -D ";" -M 1.01 results.csv plot_vns.pdf
+# python perfprof.py -D ";" -M 1.01 results.csv plot_vns.pdf 
