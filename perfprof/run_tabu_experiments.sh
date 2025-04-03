@@ -3,12 +3,12 @@
 # Configurations
 BUILD_DIR="../build"  
 EXECUTABLE="$BUILD_DIR/tsp"
-TIME_LIMIT=60 # seconds
+TIME_LIMIT=20 # seconds
 SEED=0
 NODES=1000
-TENURE_INTERVAL_LIST=(75 100)  
-TENURE_SCALE_LIST=(0.2 0.5 0.7)
-NUM_INSTANCES=50
+TENURE_INTERVAL_LIST=(75)  
+TENURE_SCALE_LIST=(0.10 0.15 0.2 0.5)
+NUM_INSTANCES=10
 OUTPUT_FILE="results_tabu.csv"
 
 # Check if the executable exists

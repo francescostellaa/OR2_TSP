@@ -145,9 +145,9 @@ void parse_command_line(int argc, char** argv, instance *inst, parameters *param
     inst->best_sol->path = NULL;
     inst->best_sol->cost = INF_COST;
 
-    params->num_kicks = 5;
-    params->interval_tenure = 100;
-    params->tenure_scaling = 3;
+    params->num_kicks = 3;
+    params->interval_tenure = 75;
+    params->tenure_scaling = 0.5;
 
     int help = 0; if ( argc < 1 ) help = 1;// if no parameters, print help
     int node_flag = 1, number_nodes = 0;
