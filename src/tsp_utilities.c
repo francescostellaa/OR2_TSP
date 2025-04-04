@@ -208,7 +208,7 @@ void parse_command_line(int argc, char** argv, instance *inst, parameters *param
         }
     }
 
-    if (alg_choice < 0 || alg_choice > 5) {
+    if (alg_choice < 0 || alg_choice > 6) {
         print_error("Algorithm choice not defined or out of range\n");
     } else {
         alg = alg_choice;
@@ -233,6 +233,7 @@ void random_instance_generator(instance *inst) {
     inst->best_sol = (tour*)malloc(sizeof(tour));
     inst->best_sol->path = (int *) malloc((inst->nnodes + 1) * sizeof(int));
     inst->best_sol->cost = INF_COST;
+    inst->integer_costs = 1;
 
 
     if ( VERBOSE >= 1000) { printf("Number of Nodes: %d\n", inst->nnodes); fflush(NULL); };
