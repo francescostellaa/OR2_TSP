@@ -7,6 +7,7 @@
 #include <string.h> 
 #include <chrono.h>
 #include <cplex.h>
+#include <assert.h>
 
 // Verbosity level
 #define VERBOSE 100
@@ -41,6 +42,7 @@ typedef struct {
     int seed;
     char input_file[256]; // input file name
     point* points; // points coordinates
+    int integer_costs; // 1 if costs are integer, 0 otherwise
 
     double* cost_matrix; // cost matrix
     tour* best_sol;
