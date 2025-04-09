@@ -12,3 +12,4 @@ data/TABU
 data/VNS
 perfprof/*.pdf
 perfprof/*.csv
+data/*.lp

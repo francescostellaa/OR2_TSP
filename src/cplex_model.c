@@ -108,7 +108,7 @@ void plot_xstar_path(const double *xstar, instance *inst, const char *output_fil
 	assert(solution != NULL);
     // Convert xstar to solution path
     xstar_to_solution(xstar, inst, solution);
-	for (int i = 0; i < inst->nnodes + 1; i++) {printf("solution[%d] = %d\n", i, solution[i]);}
+	// for (int i = 0; i < inst->nnodes + 1; i++) {printf("solution[%d] = %d\n", i, solution[i]);}
     // Open gnuplot
     FILE *gnuplot = popen("gnuplot -persist", "w");
     if (gnuplot == NULL) {
@@ -295,49 +295,50 @@ void build_model(instance *inst, CPXENVptr env, CPXLPptr lp) {
  * Helper function to add subtour elimination constraints. This would be used in a callback, but we're simplifying for now
  * @param env
  * @param lp
- * @param size
+ * @param comp_index
  * @param comp
  * @param inst
  */
-void add_sec(CPXENVptr env, CPXLPptr lp, int size, int *comp, instance *inst) {
-    // Count nodes in the component
-    int count = 0;
+void add_sec(CPXENVptr env, CPXLPptr lp, int comp_index, int *comp, instance *inst) {
+    
+    int izero = 0;
+    char sense = 'L';
+    double rhs = - 1.0;
+    int nnz = 0;
+
+    int ncols = CPXgetnumcols(env, lp);
+    int *index = (int *)malloc(ncols * sizeof(int));
+    double *value = (double *)malloc(ncols * sizeof(double));
+
+    char **cname = (char **)calloc(1, sizeof(char *));
+    if (cname == NULL) {
+        print_error("Memory allocation error for cname");
+    }
+	assert(cname != NULL);
+    cname[0] = (char *)calloc(100, sizeof(char));
+    if (cname[0] == NULL) {
+        print_error("Memory allocation error for cname[0]");
+    }
+
     for (int i = 0; i < inst->nnodes; i++) {
-        if (comp[i] == 1) count++;
-    }
-
-    // If we have a subtour (not involving all nodes)
-    if (count > 0 && count < inst->nnodes) {
-        int nnz = 0;
-        int *indices = (int *)malloc(inst->nnodes * inst->nnodes * sizeof(int));
-        double *values = (double *)malloc(inst->nnodes * inst->nnodes * sizeof(double));
-
-        // Build the constraint
-        for (int i = 0; i < inst->nnodes; i++) {
-            if (comp[i] != 1) continue;
-            for (int j = i+1; j < inst->nnodes; j++) {
-                if (comp[j] != 1) continue;
-                indices[nnz] = xpos(i, j, inst);
-                values[nnz] = 1.0;
-                nnz++;
-            }
+        if (comp[i] != comp_index) { continue; }
+        rhs += 1.0;
+        for (int j = i+1; j < inst->nnodes; j++) {
+            if (j == i) { continue; }
+            if (comp[j] != comp_index) { continue; }
+            index[nnz] = xpos(i, j, inst);
+            value[nnz] = 1.0;
+            nnz++;
+            sprintf(cname[0], "SEC(%d)", comp_index);
         }
-
-        double rhs = count - 1.0;
-        char sense = 'L';
-        int izero = 0;
-        char **cname = (char **)calloc(1, sizeof(char *));
-        cname[0] = (char *)calloc(100, sizeof(char));
-        sprintf(cname[0], "SEC_%d", size);
-
-        if (CPXaddrows(env, lp, 0, 1, nnz, &rhs, &sense, &izero, indices, values, NULL, cname))
-            print_error("Error adding subtour elimination constraint");
-
-        free(indices);
-        free(values);
-        free(cname[0]);
-        free(cname);
     }
+    if (CPXaddrows(env, lp, 0, 1, nnz, &rhs, &sense, &izero, index, value, NULL, cname))
+            print_error("wrong CPXaddrows [degree]");
+    
+    free(cname[0]);
+    free(cname);
+    free(value);
+    free(index);
 }
 
 /**
@@ -378,15 +379,18 @@ int TSPopt(instance *inst) {
     int *comp = (int *)malloc(inst->nnodes * sizeof(int));
 
 	while (ncomp >= 2) {
+        iter++;
 		CPXmipopt(env, lp);
 		CPXgetx(env, lp, xstar, 0, ncols-1);
 		build_sol(xstar, inst, succ, comp, &ncomp);
-		if (VERBOSE > 1000) {
-			printf("Iter %4d, Lower Bound: %10.2lf, Number of components: %4d, Time: %5.2lf", iter, objval, ncomp, second()-inst->tstart);
+		if (VERBOSE > -1000) {
+			printf("Iter %4d, Lower Bound: %10.2lf, Number of components: %4d, Time: %5.2lfs\n", iter, objval, ncomp, second()-inst->tstart);
 			fflush(NULL);
 		}
 		if (ncomp >= 2) {
-			continue;
+            for (int k = 1; k <= ncomp; k++) {
+                add_sec(env, lp, k, comp, inst);
+            }
 		}
 	}
     // Solve the model
@@ -416,19 +420,12 @@ int TSPopt(instance *inst) {
     //     }
     // }
 
-    // Check if solution contains subtours
-    // build_sol(xstar, inst, succ, comp, &ncomp);
-	// if (VERBOSE > 1000) {
-	// 	printf("Iter %4d, Lower Bound: %10.2lf, Number of components: %4d, Time: %5.2lf", iter, objval, ncomp, second()-inst->tstart);
-	// 	fflush(NULL);
-	// }
-
     // if (ncomp > 1) {
     //     printf("Warning: Solution contains %d subtours!\n", ncomp);
     //     // We would need to add SEC constraints and re-solve
     //     // For simplicity, we'll just report this issue
     // }
-
+    printf("Number of components: %d\n", ncomp);
 	// Plot the solution
     plot_xstar_path(xstar, inst, "../data/solution_cplex.png");
 

@@ -8,6 +8,7 @@ int TSPopt(instance *inst);
 int xpos(int i, int j, instance *inst);
 void build_model(instance *inst, CPXENVptr env, CPXLPptr lp);
 void build_sol(const double *xstar, instance *inst, int *succ, int *comp, int *ncomp);
+void add_sec(CPXENVptr env, CPXLPptr lp, int comp_index, int *comp, instance *inst);
 double dist_cplex(int i, int j, instance *inst);
 void xstar_to_solution(const double *xstar, instance *inst, int *solution);
 void plot_xstar_solution(const double *xstar, instance *inst);
