@@ -93,6 +93,61 @@ void build_sol(const double *xstar, instance *inst, int *succ, int *comp, int *n
 	}
 }
 
+/**
+ * Save the history of the Benders algorithm
+ * @param cost
+ * @param time
+ * @param filename
+ */
+void save_history_benders(double cost, double time, const char* filename) {
+    static int first_call = 0;
+
+    FILE *file = NULL;
+
+    // First call: erase file contents
+    if (!first_call) {
+        file = fopen(filename, "w");
+        first_call = 1;
+    } else {
+        file = fopen(filename, "a");
+    }
+
+    if (file == NULL) {
+        perror("Error opening file");
+        return;
+    }
+
+    // Write current time and cost to file
+    fprintf(file, "%.6f %.6f\n", time, cost);
+    fclose(file);
+}
+
+/**
+ * Plot the cost history of the Benders algorithm
+ * @param input_file
+ * @param output_file
+ */
+void plot_cost_benders(const char *input_file, const char *output_file) {
+    FILE *gnuplot = popen("gnuplot -persist", "w");
+    if (gnuplot == NULL) {
+        perror("Error opening gnuplot");
+        return;
+    }
+
+    // Set up GNUplot configuration
+    fprintf(gnuplot, "set terminal pngcairo enhanced color font 'Helvetica,12' size 1000,720\n");
+    fprintf(gnuplot, "set output '%s'\n", output_file);
+    fprintf(gnuplot, "set title 'Benders Algorithm History' font 'Helvetica,16'\n");
+    fprintf(gnuplot, "set xlabel 'Time (s)' font 'Helvetica,12'\n");
+    fprintf(gnuplot, "set ylabel 'Cost' font 'Helvetica,12'\n");
+    fprintf(gnuplot, "set grid\n");
+    fprintf(gnuplot, "plot '%s' using 1:2 with linespoints title 'Cost' lw 2 lc rgb '#FF0000' pt 7 ps 1.5\n", input_file);
+
+    // Close GNUplot
+    fflush(gnuplot);
+    pclose(gnuplot);
+}
+
 
 /**
  * Plot the solution path
@@ -194,18 +249,6 @@ void xstar_to_solution(const double *xstar, instance *inst, int *solution) {
 	free(comp);
 }
 
-// Calculates the distance between two points
-double dist_cplex(int i, int j, instance *inst) {
-    double dx = inst->points[i].x - inst->points[j].x;
-    double dy = inst->points[i].y - inst->points[j].y;
-
-    if (!inst->integer_costs)
-        return sqrt(dx*dx + dy*dy);
-
-    int dis = sqrt(dx*dx + dy*dy) + 0.499999999;  // nearest integer
-    return (double)dis;
-}
-
 /**
  * Maps the pair (i,j) to a single index in the cost matrix
  * @param i
@@ -244,7 +287,6 @@ void build_model(instance *inst, CPXENVptr env, CPXLPptr lp) {
     for (int i = 0; i < inst->nnodes; i++) {
         for (int j = i+1; j < inst->nnodes; j++) {
             sprintf(cname[0], "x(%d,%d)", i+1, j+1);
-            //double obj = dist_cplex(i, j, inst); // cost == distance
         	double obj = inst->cost_matrix[i * inst->nnodes + j]; // cost == distance
             double lb = 0.0;
             double ub = 1.0;
@@ -383,6 +425,7 @@ int TSPopt(instance *inst) {
 		CPXmipopt(env, lp);
 		CPXgetx(env, lp, xstar, 0, ncols-1);
 		build_sol(xstar, inst, succ, comp, &ncomp);
+        CPXgetobjval(env, lp, &objval);
 		if (VERBOSE > -1000) {
 			printf("Iter %4d, Lower Bound: %10.2lf, Number of components: %4d, Time: %5.2lfs\n", iter, objval, ncomp, second()-inst->tstart);
 			fflush(NULL);
@@ -392,23 +435,9 @@ int TSPopt(instance *inst) {
                 add_sec(env, lp, k, comp, inst);
             }
 		}
+        save_history_benders(objval, second()-inst->tstart, "../data/history_benders.txt");
+        fflush(NULL);
 	}
-    // Solve the model
-    // if (CPXmipopt(env, lp))
-    //     print_error("CPXmipopt() error");
-
-    // Retrieve solution status
-    // int status = CPXgetstat(env, lp);
-    // printf("Solution status: %d\n", status);
-
-    // Get solution objective value
-    if (CPXgetobjval(env, lp, &objval))
-        print_error("CPXgetobjval() error");
-    printf("Objective value: %f\n", objval);
-
-    // Retrieve the solution
-    // if (CPXgetx(env, lp, xstar, 0, ncols-1))
-    //     print_error("CPXgetx() error");
 
     // Print selected edges
     // printf("Selected edges in the solution:\n");
@@ -420,14 +449,9 @@ int TSPopt(instance *inst) {
     //     }
     // }
 
-    // if (ncomp > 1) {
-    //     printf("Warning: Solution contains %d subtours!\n", ncomp);
-    //     // We would need to add SEC constraints and re-solve
-    //     // For simplicity, we'll just report this issue
-    // }
-    printf("Number of components: %d\n", ncomp);
 	// Plot the solution
     plot_xstar_path(xstar, inst, "../data/solution_cplex.png");
+    plot_cost_benders("../data/history_benders.txt", "../data/history_benders.png");
 
 	// Free allocated memory
 	free(comp);

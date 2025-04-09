@@ -9,8 +9,9 @@ int xpos(int i, int j, instance *inst);
 void build_model(instance *inst, CPXENVptr env, CPXLPptr lp);
 void build_sol(const double *xstar, instance *inst, int *succ, int *comp, int *ncomp);
 void add_sec(CPXENVptr env, CPXLPptr lp, int comp_index, int *comp, instance *inst);
-double dist_cplex(int i, int j, instance *inst);
 void xstar_to_solution(const double *xstar, instance *inst, int *solution);
-void plot_xstar_solution(const double *xstar, instance *inst);
+void plot_xstar_path(const double *xstar, instance *inst, const char *output_file);
+void save_history_benders(double cost, double time, const char* filename);
+void plot_cost_benders(const char *input_file, const char *output_file);
 
 #endif //CPLEX_MODEL_H
