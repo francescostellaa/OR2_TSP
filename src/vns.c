@@ -8,7 +8,7 @@
  * @return zero on success, non-zero on failures
  */
 int vns(const instance* inst, tour* solution, double timelimit, int num_kicks) {
-    printf("Num Kicks = %d\n", num_kicks);
+
     int n = inst->nnodes;
 
     int k = 1; 

@@ -285,7 +285,7 @@ void build_model(instance *inst, CPXENVptr env, CPXLPptr lp) {
     free(index);
 
     // Write model to file for debugging
-    CPXwriteprob(env, lp, "model.lp", NULL);
+    CPXwriteprob(env, lp, "../data/model.lp", NULL);
 
     free(cname[0]);
     free(cname);
@@ -366,54 +366,75 @@ int TSPopt(instance *inst) {
         print_error("CPXsetdblparam() error");
     if (CPXsetintparam(env, CPX_PARAM_MIPDISPLAY, 2)) // Verbosity level
         print_error("CPXsetintparam() error");
+	if (CPXsetdblparam(env, CPX_PARAM_EPGAP, 1e-9)) // Set the optimality gap 	
+		print_error("CPXsetdblparam() error"); 
 
+	int ncols = CPXgetnumcols(env, lp);
+	double objval = 0.0;
+	int iter = 0;
+	int ncomp = 9999;
+	double *xstar = (double *)calloc(ncols, sizeof(double));
+	int *succ = (int *)malloc(inst->nnodes * sizeof(int));
+    int *comp = (int *)malloc(inst->nnodes * sizeof(int));
+
+	while (ncomp >= 2) {
+		CPXmipopt(env, lp);
+		CPXgetx(env, lp, xstar, 0, ncols-1);
+		build_sol(xstar, inst, succ, comp, &ncomp);
+		if (VERBOSE > 1000) {
+			printf("Iter %4d, Lower Bound: %10.2lf, Number of components: %4d, Time: %5.2lf", iter, objval, ncomp, second()-inst->tstart);
+			fflush(NULL);
+		}
+		if (ncomp >= 2) {
+			continue;
+		}
+	}
     // Solve the model
-    if (CPXmipopt(env, lp))
-        print_error("CPXmipopt() error");
+    // if (CPXmipopt(env, lp))
+    //     print_error("CPXmipopt() error");
 
     // Retrieve solution status
-    int status = CPXgetstat(env, lp);
-    printf("Solution status: %d\n", status);
+    // int status = CPXgetstat(env, lp);
+    // printf("Solution status: %d\n", status);
 
     // Get solution objective value
-    double objval;
     if (CPXgetobjval(env, lp, &objval))
         print_error("CPXgetobjval() error");
     printf("Objective value: %f\n", objval);
 
     // Retrieve the solution
-    int ncols = CPXgetnumcols(env, lp);
-    double *xstar = (double *)calloc(ncols, sizeof(double));
-    if (CPXgetx(env, lp, xstar, 0, ncols-1))
-        print_error("CPXgetx() error");
+    // if (CPXgetx(env, lp, xstar, 0, ncols-1))
+    //     print_error("CPXgetx() error");
 
     // Print selected edges
-    printf("Selected edges in the solution:\n");
-    for (int i = 0; i < inst->nnodes; i++) {
-        for (int j = i+1; j < inst->nnodes; j++) {
-            if (xstar[xpos(i, j, inst)] > 0.5) {
-                printf("  x(%3d,%3d) = 1\n", i+1, j+1);
-            }
-        }
-    }
+    // printf("Selected edges in the solution:\n");
+    // for (int i = 0; i < inst->nnodes; i++) {
+    //     for (int j = i+1; j < inst->nnodes; j++) {
+    //         if (xstar[xpos(i, j, inst)] > 0.5) {
+    //             printf("  x(%3d,%3d) = 1\n", i+1, j+1);
+    //         }
+    //     }
+    // }
 
     // Check if solution contains subtours
-    int *succ = (int *)malloc(inst->nnodes * sizeof(int));
-    int *comp = (int *)malloc(inst->nnodes * sizeof(int));
-    int ncomp;
-    build_sol(xstar, inst, succ, comp, &ncomp);
+    // build_sol(xstar, inst, succ, comp, &ncomp);
+	// if (VERBOSE > 1000) {
+	// 	printf("Iter %4d, Lower Bound: %10.2lf, Number of components: %4d, Time: %5.2lf", iter, objval, ncomp, second()-inst->tstart);
+	// 	fflush(NULL);
+	// }
 
-    if (ncomp > 1) {
-        printf("Warning: Solution contains %d subtours!\n", ncomp);
-        // We would need to add SEC constraints and re-solve
-        // For simplicity, we'll just report this issue
-    }
+    // if (ncomp > 1) {
+    //     printf("Warning: Solution contains %d subtours!\n", ncomp);
+    //     // We would need to add SEC constraints and re-solve
+    //     // For simplicity, we'll just report this issue
+    // }
 
-    free(succ);
-    free(comp);
-
-    // Plot the solution
+	// Plot the solution
     plot_xstar_path(xstar, inst, "../data/solution_cplex.png");
+
+	// Free allocated memory
+	free(comp);
+    free(succ);
     free(xstar);
 
     // Free and close CPLEX model

@@ -203,6 +203,7 @@ void parse_command_line(int argc, char** argv, instance *inst, parameters *param
 
     if (node_flag) { 
         if (number_nodes <= 0) { print_error("Number of nodes not defined\n"); }
+        else if (number_nodes <= 5) { print_error("Instance too small\n"); }
         else{
             inst->nnodes = number_nodes; 
         }

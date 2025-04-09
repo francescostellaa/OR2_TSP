@@ -1,8 +1,7 @@
 #include "tabu.h"
 
 int tabu(const instance* inst, tour* solution, double timelimit, int interval_tenure, float tenure_scaling) {
-    printf("Interval Tenure = %d\n", interval_tenure);
-    printf("Tenure Scaling = %f\n", tenure_scaling);
+
     if (inst->best_sol->path == NULL) {
         print_error("Error occurred while allocating memory for the instance\n");
         return -1;

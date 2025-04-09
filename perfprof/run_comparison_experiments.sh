@@ -4,9 +4,9 @@
 BUILD_DIR="../build"  
 EXECUTABLE="$BUILD_DIR/tsp"
 TIME_LIMIT=60 # seconds
-SEED=0
+SEED=50
 NODES=1000
-NUM_INSTANCES=100
+NUM_INSTANCES=50
 OUTPUT_FILE="results_comparison.csv"
 
 # Check if the executable exists
