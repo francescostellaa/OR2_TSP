@@ -50,9 +50,13 @@ void build_sol(const double *xstar, instance *inst, int *succ, int *comp, int *n
 			}
 		}
 	}
-	for ( int i = 0; i < inst->nnodes; i++ )
-	{
-		if ( degree[i] != 2 ) print_error("wrong degree in build_sol()");
+	/*for (int i=0; i<inst->nnodes; i++) {
+		printf("degree[%d] = %d\n", i, degree[i]);
+    }*/
+	for ( int i = 0; i < inst->nnodes; i++ ) {
+		if ( degree[i] != 2 ) {
+			print_error("wrong degree in build_sol()");
+		}
 	}	
 	free(degree);
 #endif
@@ -162,6 +166,7 @@ void plot_xstar_path(const double *xstar, instance *inst, const char *output_fil
     }
 	assert(solution != NULL);
     // Convert xstar to solution path
+
     xstar_to_solution(xstar, inst, solution);
 	// for (int i = 0; i < inst->nnodes + 1; i++) {printf("solution[%d] = %d\n", i, solution[i]);}
     // Open gnuplot
@@ -211,10 +216,9 @@ void xstar_to_solution(const double *xstar, instance *inst, int *solution) {
 	build_sol(xstar, inst, succ, comp, &ncomp);
 
 	// Check if we have a valid tour (only one component)
-	if (ncomp != 1) {
+	/*if (ncomp != 1) {
 		printf("Warning: Solution contains %d components instead of 1\n", ncomp);
-	}
-
+	}*/
 	// Reset solution array
 	for (int i = 0; i < inst->nnodes + 1; i++) {
 		solution[i] = -1;
@@ -401,15 +405,15 @@ int TSPopt(instance *inst) {
     }
 
     build_model(inst, env, lp);
-
+	printf("Time limit: %lf\n", inst->timelimit);
     // Set CPLEX parameters
     if (CPXsetintparam(env, CPX_PARAM_SCRIND, 1)) // Enable screen output
         print_error("CPXsetintparam() error");
-    if (CPXsetdblparam(env, CPX_PARAM_TILIM, 3600.0)) // Time limit: 1 hour
+    if (CPXsetdblparam(env, CPX_PARAM_TILIM, inst->timelimit)) // Time limit
         print_error("CPXsetdblparam() error");
     if (CPXsetintparam(env, CPX_PARAM_MIPDISPLAY, 2)) // Verbosity level
         print_error("CPXsetintparam() error");
-	if (CPXsetdblparam(env, CPX_PARAM_EPGAP, 1e-9)) // Set the optimality gap 	
+	if (CPXsetdblparam(env, CPX_PARAM_EPGAP, 1e-7)) // Set the optimality gap
 		print_error("CPXsetdblparam() error"); 
 
 	int ncols = CPXgetnumcols(env, lp);
@@ -422,6 +426,15 @@ int TSPopt(instance *inst) {
 
 	while (ncomp >= 2) {
         iter++;
+		if (second() - inst->tstart > inst->timelimit) {
+			printf("Time limit reached\n");
+			break;
+		}
+		// apply to cplex the residual time left to solve the problem
+		if ( second() - inst->tstart < inst->timelimit) {
+			double residual_time = inst->timelimit - (second() - inst->tstart); // The residual time limit that is left
+			CPXsetdblparam(env, CPX_PARAM_TILIM, residual_time);
+		}
 		CPXmipopt(env, lp);
 		CPXgetx(env, lp, xstar, 0, ncols-1);
 		build_sol(xstar, inst, succ, comp, &ncomp);
@@ -430,14 +443,20 @@ int TSPopt(instance *inst) {
 			printf("Iter %4d, Lower Bound: %10.2lf, Number of components: %4d, Time: %5.2lfs\n", iter, objval, ncomp, second()-inst->tstart);
 			fflush(NULL);
 		}
+
 		if (ncomp >= 2) {
-            for (int k = 1; k <= ncomp; k++) {
-                add_sec(env, lp, k, comp, inst);
-            }
+			for (int k = 1; k <= ncomp; k++) {
+				add_sec(env, lp, k, comp, inst);
+			}
 		}
         save_history_benders(objval, second()-inst->tstart, "../data/history_benders.txt");
         fflush(NULL);
 	}
+
+	printf("NUmber of components before solving: %d\n", ncomp);
+	patching_heuristic(succ, &ncomp, comp, inst);
+	printf("Number of components after patching: %d\n", ncomp);
+	//patching heuristic
 
     // Print selected edges
     // printf("Selected edges in the solution:\n");
@@ -448,7 +467,7 @@ int TSPopt(instance *inst) {
     //         }
     //     }
     // }
-
+	//build_sol(xstar, inst, succ, comp, &ncomp);
 	// Plot the solution
     plot_xstar_path(xstar, inst, "../data/solution_cplex.png");
     plot_cost_benders("../data/history_benders.txt", "../data/history_benders.png");
@@ -463,4 +482,84 @@ int TSPopt(instance *inst) {
     CPXcloseCPLEX(&env);
 
     return 0;
+}
+
+void patching_heuristic(int* succ, int* ncomp, int* comp, instance* inst) {
+	if (succ == NULL) { print_error("Error occurred while allocating memory for succ\n"); }
+	if (ncomp == NULL) { print_error("Error occurred while allocating memory for ncomp\n"); }
+	if (comp == NULL) { print_error("Error occurred while allocating memory for comp\n"); }
+	if (inst == NULL) { print_error("Error occurred while allocating memory for inst\n"); }
+	assert(ncomp > 0);
+	assert(succ != NULL);
+	assert(comp != NULL);
+	assert(inst != NULL);
+	assert(ncomp != NULL);
+
+	while (*ncomp > 1) {
+		int best_i = -1;
+		int best_j = -1;
+		int cross_flag = -1;
+		double best_delta = INF_COST;
+		for (int i = 0; i < inst->nnodes; i++) {
+			for (int j = 0; j < inst->nnodes; j++) {
+				if (i == j) continue;
+
+				if (comp[i] != comp[j]) {
+					// best delta between cross swap or straight swap
+					/*double delta_straight = inst->cost_matrix[i * inst->nnodes + j] +
+						inst->cost_matrix[succ[i] * inst->nnodes + succ[j]] -
+						inst->cost_matrix[i * inst->nnodes + succ[i]] -
+						inst->cost_matrix[j * inst->nnodes + succ[j]];*/
+					double delta_straight = INF_COST;
+					double delta_cross = inst->cost_matrix[i * inst->nnodes + succ[j]] +
+						inst->cost_matrix[succ[i] * inst->nnodes + j] -
+						inst->cost_matrix[i * inst->nnodes + succ[i]] -
+						inst->cost_matrix[j * inst->nnodes + succ[j]];
+					if (delta_straight < best_delta || delta_cross + EPS_COST < best_delta) {
+						if (delta_cross < delta_straight) {
+							best_delta = delta_cross;
+							best_i = i;
+							best_j = j;
+							cross_flag = 1;
+						} else {
+							best_delta = delta_straight;
+							best_i = i;
+							best_j = j;
+							cross_flag = 0;
+						}
+					}
+				}
+			}
+		}
+		if (cross_flag) {
+			int temp = succ[best_i];
+			succ[best_i] = succ[best_j];
+			succ[best_j] = temp;
+
+			for (int k = 0; k < inst->nnodes; k++) {
+				if (comp[k] == comp[best_j]) {
+					comp[k] = comp[best_i];
+				}
+			}
+			comp[best_j] = comp[best_i];
+			(*ncomp)--;
+		}
+		else {
+			int temp = succ[best_i];
+			succ[best_i] = best_j;
+			succ[best_j] = temp;
+			for (int k = 0; k < inst->nnodes; k++) {
+				if (comp[k] == comp[best_j]) {
+					comp[k] = comp[best_i];
+				}
+			}
+			comp[best_j] = comp[best_i];
+			(*ncomp)--;
+		}
+	}
+	for (int i = 0; i < inst->nnodes; i++) {printf("Comp[%d] = %d\n", i, comp[i]);}
+	/*printf("Number of components after patching: %d\n", *ncomp);
+	for (int i = 0; i < inst->nnodes; i++) {
+		printf("comp[%d] = %d\n", i, comp[i]);
+	}*/
 }
