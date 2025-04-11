@@ -56,7 +56,9 @@ void build_sol(const double *xstar, instance *inst, int *succ, int *comp, int *n
 	for ( int i = 0; i < inst->nnodes; i++ ) {
 		if ( degree[i] != 2 ) {
 			print_error("wrong degree in build_sol()");
-		}
+		 } //else {
+        //     printf("degree[%d] = %d\n", i, degree[i]);
+        //  }
 	}	
 	free(degree);
 #endif
@@ -152,6 +154,53 @@ void plot_cost_benders(const char *input_file, const char *output_file) {
     pclose(gnuplot);
 }
 
+
+/**
+ * Plot the solution path based on the succ array
+ * @param succ
+ * @param inst
+ * @param output_file
+ */
+void plot_succ_path(const int *succ, instance *inst, const char *output_file) {
+    if (succ == NULL) {
+        print_error("succ array is NULL");
+    }
+
+    // Open gnuplot
+    FILE *gnuplot = popen("gnuplot -persist", "w");
+    if (gnuplot == NULL) {
+        print_error("Error opening gnuplot");
+    }
+
+    // Set up gnuplot configuration
+    fprintf(gnuplot, "set terminal pngcairo enhanced color font 'Helvetica,12' size 1000,720\n");
+    fprintf(gnuplot, "set output '%s'\n", output_file);
+    fprintf(gnuplot, "set title 'TSP Solution Path (Based on succ)' font 'Helvetica,16'\n");
+    fprintf(gnuplot, "set style line 1 lc rgb '#FF0000' lt 1 lw 2 pt 7 ps 1.5\n");
+    fprintf(gnuplot, "plot '-' with linespoints ls 1 title 'TSP Path'\n");
+
+    // Plot the solution path based on the succ array
+    int start = 0; // Assuming the tour starts at node 0
+    int current = start;
+    for (int i = 0; i < inst->nnodes; i++) {
+        printf("succ[%d] = %d\n", i, succ[i]);
+    }
+    do {
+        fprintf(gnuplot, "%lf %lf\n", inst->points[current].x, inst->points[current].y);
+        current = succ[current];
+        printf("current = %d\n", current);
+    } while (current != start);
+
+    // Close the tour by adding the first node at the end
+    fprintf(gnuplot, "%lf %lf\n", inst->points[start].x, inst->points[start].y);
+
+    // End data input
+    fprintf(gnuplot, "e\n");
+
+    // Close gnuplot
+    fflush(gnuplot);
+    pclose(gnuplot);
+}
 
 /**
  * Plot the solution path
@@ -455,8 +504,39 @@ int TSPopt(instance *inst) {
 
 	printf("NUmber of components before solving: %d\n", ncomp);
 	patching_heuristic(succ, &ncomp, comp, inst);
-	printf("Number of components after patching: %d\n", ncomp);
-	//patching heuristic
+    printf("Number of components after patching: %d\n", ncomp);
+    // for (int i = 0; i < inst->nnodes; i++) {
+    //     printf("comp[%d] = %d\n", i, comp[i]);
+    // }
+    
+	
+    int *degree = calloc(inst->nnodes, sizeof(int));
+	for ( int i = 0; i < inst->nnodes; i++ )
+	{
+		for ( int j = i+1; j < inst->nnodes; j++ )
+		{
+			int k = xpos(i,j,inst);
+			if ( (fabs(xstar[k]) > EPS) && (fabs(xstar[k]-1.0) > EPS)) print_error(" wrong xstar in build_sol()");
+			if ( xstar[k] > 0.5 ) 
+			{
+				++degree[i];
+				++degree[j];
+			}
+		}
+	}
+    printf("\n\n");
+	for (int i=0; i<inst->nnodes; i++) {
+		printf("degree[%d] = %d\n", i, degree[i]);
+    }
+	for ( int i = 0; i < inst->nnodes; i++ ) {
+		if ( degree[i] != 2 ) {
+			print_error("wrong degree in build_sol()");
+		 } 
+         else {
+            printf("degree[%d] = %d\n", i, degree[i]);
+         }
+	}	
+	free(degree);
 
     // Print selected edges
     // printf("Selected edges in the solution:\n");
@@ -469,7 +549,8 @@ int TSPopt(instance *inst) {
     // }
 	//build_sol(xstar, inst, succ, comp, &ncomp);
 	// Plot the solution
-    plot_xstar_path(xstar, inst, "../data/solution_cplex.png");
+    // plot_xstar_path(xstar, inst, "../data/solution_cplex.png");
+    plot_succ_path(succ, inst, "../data/solution_cplex.png");
     plot_cost_benders("../data/history_benders.txt", "../data/history_benders.png");
 
 	// Free allocated memory
@@ -496,6 +577,7 @@ void patching_heuristic(int* succ, int* ncomp, int* comp, instance* inst) {
 	assert(ncomp != NULL);
 
 	while (*ncomp > 1) {
+        printf("Number of components: %d\n", *ncomp);
 		int best_i = -1;
 		int best_j = -1;
 		int cross_flag = -1;
@@ -506,16 +588,18 @@ void patching_heuristic(int* succ, int* ncomp, int* comp, instance* inst) {
 
 				if (comp[i] != comp[j]) {
 					// best delta between cross swap or straight swap
-					/*double delta_straight = inst->cost_matrix[i * inst->nnodes + j] +
-						inst->cost_matrix[succ[i] * inst->nnodes + succ[j]] -
-						inst->cost_matrix[i * inst->nnodes + succ[i]] -
-						inst->cost_matrix[j * inst->nnodes + succ[j]];*/
-					double delta_straight = INF_COST;
+					// double delta_straight = inst->cost_matrix[i * inst->nnodes + j] +
+					// 	inst->cost_matrix[succ[i] * inst->nnodes + succ[j]] -
+					// 	inst->cost_matrix[i * inst->nnodes + succ[i]] -
+					// 	inst->cost_matrix[j * inst->nnodes + succ[j]];
+                    double delta_straight = INF_COST;
+
 					double delta_cross = inst->cost_matrix[i * inst->nnodes + succ[j]] +
 						inst->cost_matrix[succ[i] * inst->nnodes + j] -
 						inst->cost_matrix[i * inst->nnodes + succ[i]] -
 						inst->cost_matrix[j * inst->nnodes + succ[j]];
-					if (delta_straight < best_delta || delta_cross + EPS_COST < best_delta) {
+					
+                    if (delta_straight < best_delta || delta_cross + EPS_COST < best_delta) {
 						if (delta_cross < delta_straight) {
 							best_delta = delta_cross;
 							best_i = i;
@@ -535,13 +619,12 @@ void patching_heuristic(int* succ, int* ncomp, int* comp, instance* inst) {
 			int temp = succ[best_i];
 			succ[best_i] = succ[best_j];
 			succ[best_j] = temp;
-
 			for (int k = 0; k < inst->nnodes; k++) {
-				if (comp[k] == comp[best_j]) {
+				if (comp[k] == comp[best_j] && k != best_j) {
 					comp[k] = comp[best_i];
 				}
 			}
-			comp[best_j] = comp[best_i];
+            comp[best_j] = comp[best_i];
 			(*ncomp)--;
 		}
 		else {
@@ -549,7 +632,7 @@ void patching_heuristic(int* succ, int* ncomp, int* comp, instance* inst) {
 			succ[best_i] = best_j;
 			succ[best_j] = temp;
 			for (int k = 0; k < inst->nnodes; k++) {
-				if (comp[k] == comp[best_j]) {
+				if (comp[k] == comp[best_j] && k != best_j) {
 					comp[k] = comp[best_i];
 				}
 			}
@@ -557,7 +640,7 @@ void patching_heuristic(int* succ, int* ncomp, int* comp, instance* inst) {
 			(*ncomp)--;
 		}
 	}
-	for (int i = 0; i < inst->nnodes; i++) {printf("Comp[%d] = %d\n", i, comp[i]);}
+	// for (int i = 0; i < inst->nnodes; i++) {printf("Comp[%d] = %d\n", i, comp[i]);}
 	/*printf("Number of components after patching: %d\n", *ncomp);
 	for (int i = 0; i < inst->nnodes; i++) {
 		printf("comp[%d] = %d\n", i, comp[i]);
