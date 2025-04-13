@@ -445,20 +445,20 @@ int TSPopt(instance *inst) {
 	} while (current != start);
 	solution->path[inst->nnodes] = solution->path[0]; // Close the tour
 
-	// Compute solution cost and check its feasibility
+	// Compute solution cost
 	compute_solution_cost(solution, inst);
 	if ( VERBOSE > 1000 ) { printf("Cost of the solution before 2-Opt: %lf\n", solution->cost); }
 	if (two_opt_flag) {
 		// Reset the time limit to allow for 2-Opt
 		inst->tstart = second();
 		two_opt(solution, inst);
+		// Check the solution feasibility
+		check_sol(solution->path, solution->cost, inst);
+		if ( VERBOSE > 1000 ) { printf("Cost of the solution after 2-Opt: %lf\n", solution->cost); }
+		plot_solution(inst, solution->path);
 	}
 
-	if ( VERBOSE > 1000 ) { printf("Cost of the solution after 2-Opt: %lf\n", solution->cost); }
-	check_sol(solution->path, solution->cost, inst);
-	if ( VERBOSE > 1000 ) { printf("Cost of the solution: %lf\n", solution->cost); }
-	plot_solution(inst, solution->path);
-
+	// Plot the solution path of both CPLEX
     plot_succ_path(succ, inst, "../data/solution_cplex.png");
     plot_cost_benders("../data/history_benders.txt", "../data/history_benders.png");
 
