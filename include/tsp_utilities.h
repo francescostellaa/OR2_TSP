@@ -10,7 +10,7 @@
 #include <assert.h>
 
 // Verbosity level
-#define VERBOSE 100
+#define VERBOSE 1001
 
 // Constants
 #define MAX_BOUNDARY 10000
