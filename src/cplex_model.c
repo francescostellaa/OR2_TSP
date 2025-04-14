@@ -459,9 +459,7 @@ int TSPopt(instance *inst) {
 		plot_solution(inst, solution->path);
 	}
 
-	if (check_sol(solution->path, solution->cost, inst)) {
-		update_best_sol(inst, solution);
-	}
+	update_best_sol(inst, solution);
 
 	// Plot the solution path of both CPLEX
     plot_succ_path(succ, inst, "../data/solution_cplex.png");
