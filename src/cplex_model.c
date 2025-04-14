@@ -276,6 +276,7 @@ int TSPopt(instance *inst) {
 	// Flag to indicate if 2-opt is applied. Will be set to 1 if
 	// CPLEX is not able to solve the problem to the optimality
 	int two_opt_flag = 0;
+	tour* solution = (tour *)malloc(sizeof(tour));
 
 	while (ncomp >= 2) {
         iter++;
@@ -288,6 +289,11 @@ int TSPopt(instance *inst) {
 		CPXsetdblparam(env, CPX_PARAM_TILIM, residual_time);
 
 		if ( CPXmipopt(env, lp) ) { print_error("CPXmipopt() error"); }
+		int solstat = CPXgetstat(env, lp);
+		if (solstat != CPXMIP_OPTIMAL && solstat != CPXMIP_OPTIMAL_TOL && solstat != CPXMIP_FEASIBLE) {
+			printf("CPLEX Error: No feasible solution found for the given time limit.\nStatus: %d\n", solstat);
+			exit(1); // Exit the loop or handle the error
+		}
 		if ( CPXgetx(env, lp, xstar, 0, ncols-1) ) { print_error("CPXgetx() error"); }
 		build_sol(xstar, inst, succ, comp, &ncomp);
         if ( CPXgetobjval(env, lp, &objval) ) { print_error("CPXgetobjval() error"); }
@@ -301,6 +307,14 @@ int TSPopt(instance *inst) {
 				add_sec(env, lp, k, comp, inst);
 			}
 		}
+		if (ncomp >= 2) {
+			patching_heuristic(succ, ncomp, comp, inst);
+			reconstruct_sol(solution, succ, inst);
+			two_opt(solution, inst);
+			check_sol(solution->path, solution->cost, inst);
+			if (VERBOSE > 100) { printf("Solution cost after 2-Opt: %lf\n", solution->cost); }
+		}
+
         save_history_benders(objval, second()-inst->tstart, "../data/history_benders.txt");
         fflush(NULL);
 	}
@@ -308,32 +322,13 @@ int TSPopt(instance *inst) {
 	if (iter <= 1) {
 		print_error("Increase the time limit");
 	}
-
-	if (ncomp >= 2 && iter > 1) {
-		if (VERBOSE > 1000 ) { printf("Number of components before solving: %d\n", ncomp); }
-		patching_heuristic(succ, &ncomp, comp, inst);
-		two_opt_flag = 1;
-		if (VERBOSE > 1000 ) { printf("Number of components after patching: %d\n", ncomp); }
-	}
 	
 	#ifdef DEBUG
 		check_degrees(inst, xstar);	
 	#endif
 
-	tour* solution = (tour *)malloc(sizeof(tour));
 	reconstruct_sol(solution, succ, inst);
-	
-	if (two_opt_flag) {
-		if ( VERBOSE > 1000 ) { printf("Cost of the solution before 2-Opt: %lf\n", solution->cost); }
-		// Reset the time limit to allow for 2-Opt
-		inst->tstart = second();
-		two_opt(solution, inst);
-		// Check the solution feasibility
-		check_sol(solution->path, solution->cost, inst);
-		if ( VERBOSE > 1000 ) { printf("Cost of the solution after 2-Opt: %lf\n", solution->cost); }
-		plot_solution(inst, solution->path);
-	}
-
+	plot_solution(inst, solution->path);
 	update_best_sol(inst, solution);
 
 	// Plot the solution path of both CPLEX
@@ -355,13 +350,12 @@ int TSPopt(instance *inst) {
 }
 
 
-void patching_heuristic(int* succ, int* ncomp, int* comp, instance* inst) {
+void patching_heuristic(int* succ, int ncomp, int* comp, instance* inst) {
 	if (succ == NULL) { print_error("Error occurred while allocating memory for succ\n"); }
-	if (ncomp == NULL) { print_error("Error occurred while allocating memory for ncomp\n"); }
 	if (comp == NULL) { print_error("Error occurred while allocating memory for comp\n"); }
 	if (inst == NULL) { print_error("Error occurred while allocating memory for inst\n"); }
 
-	while (*ncomp > 1) {
+	while (ncomp > 1) {
 		int best_i = -1;
 		int best_j = -1;
 		int cross_flag = -1;
@@ -376,9 +370,9 @@ void patching_heuristic(int* succ, int* ncomp, int* comp, instance* inst) {
 			}
 		}
 		if (cross_flag) {
-			patch_cross_case(succ, comp, ncomp, best_i, best_j, inst);
+			patch_cross_case(succ, comp, &ncomp, best_i, best_j, inst);
 		} else {
-			patch_straight_case(succ, comp, ncomp, best_i, best_j, inst);
+			patch_straight_case(succ, comp, &ncomp, best_i, best_j, inst);
 		}
 	}
 	if (VERBOSE > 2000) { printf("Finished patching heuristic\n"); }
