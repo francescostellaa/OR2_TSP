@@ -413,6 +413,7 @@ int TSPopt(instance *inst) {
 		if (VERBOSE > 1000 ) { printf("Number of components after patching: %d\n", ncomp); }
 	}
 	
+	#ifdef DEBUG
     int *degree = calloc(inst->nnodes, sizeof(int));
 	for ( int i = 0; i < inst->nnodes; i++ ) {
 		for ( int j = i+1; j < inst->nnodes; j++ ) {
@@ -432,6 +433,7 @@ int TSPopt(instance *inst) {
 		 }
 	}	
 	free(degree);
+	#endif
 
 	tour* solution = (tour *)malloc(sizeof(tour));
 	solution->cost = INF_COST;
@@ -444,11 +446,10 @@ int TSPopt(instance *inst) {
 		current = succ[current];
 	} while (current != start);
 	solution->path[inst->nnodes] = solution->path[0]; // Close the tour
-
-	// Compute solution cost
 	compute_solution_cost(solution, inst);
-	if ( VERBOSE > 1000 ) { printf("Cost of the solution before 2-Opt: %lf\n", solution->cost); }
+	
 	if (two_opt_flag) {
+		if ( VERBOSE > 1000 ) { printf("Cost of the solution before 2-Opt: %lf\n", solution->cost); }
 		// Reset the time limit to allow for 2-Opt
 		inst->tstart = second();
 		two_opt(solution, inst);
@@ -456,6 +457,10 @@ int TSPopt(instance *inst) {
 		check_sol(solution->path, solution->cost, inst);
 		if ( VERBOSE > 1000 ) { printf("Cost of the solution after 2-Opt: %lf\n", solution->cost); }
 		plot_solution(inst, solution->path);
+	}
+
+	if (check_sol(solution->path, solution->cost, inst)) {
+		update_best_sol(inst, solution);
 	}
 
 	// Plot the solution path of both CPLEX
