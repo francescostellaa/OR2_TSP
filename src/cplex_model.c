@@ -1,13 +1,7 @@
 #include <cplex_model.h>
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include <cplex.h>  // Proper CPLEX header
+#include <cplex_utilities.h>
 
 //#define DEBUG    // da commentare se non si vuole il debugging
-#define EPS 1e-5
-
 
 /**
  * Build the solution from the output of cplex model
@@ -93,105 +87,6 @@ void build_sol(const double *xstar, instance *inst, int *succ, int *comp, int *n
 		
 		// go to the next component...
 	}
-}
-
-/**
- * Save the history of the Benders algorithm
- * @param cost
- * @param time
- * @param filename
- */
-void save_history_benders(double cost, double time, const char* filename) {
-    static int first_call = 0;
-
-    FILE *file = NULL;
-
-    // First call: erase file contents
-    if (!first_call) {
-        file = fopen(filename, "w");
-        first_call = 1;
-    } else {
-        file = fopen(filename, "a");
-    }
-
-    if (file == NULL) {
-        perror("Error opening file");
-        return;
-    }
-
-    // Write current time and cost to file
-    fprintf(file, "%.6f %.6f\n", time, cost);
-    fclose(file);
-}
-
-/**
- * Plot the cost history of the Benders algorithm
- * @param input_file
- * @param output_file
- */
-void plot_cost_benders(const char *input_file, const char *output_file) {
-    FILE *gnuplot = popen("gnuplot -persist", "w");
-    if (gnuplot == NULL) {
-        perror("Error opening gnuplot");
-        return;
-    }
-
-    // Set up GNUplot configuration
-    fprintf(gnuplot, "set terminal pngcairo enhanced color font 'Helvetica,12' size 1000,720\n");
-    fprintf(gnuplot, "set output '%s'\n", output_file);
-    fprintf(gnuplot, "set title 'Benders Algorithm History' font 'Helvetica,16'\n");
-    fprintf(gnuplot, "set xlabel 'Time (s)' font 'Helvetica,12'\n");
-    fprintf(gnuplot, "set ylabel 'Cost' font 'Helvetica,12'\n");
-    fprintf(gnuplot, "set grid\n");
-    fprintf(gnuplot, "plot '%s' using 1:2 with linespoints title 'Cost' lw 2 lc rgb '#FF0000' pt 7 ps 1.5\n", input_file);
-
-    // Close GNUplot
-    fflush(gnuplot);
-    pclose(gnuplot);
-}
-
-/**
- * Plot the solution path based on the succ array
- * @param succ
- * @param inst
- * @param output_file
- */
-void plot_succ_path(const int *succ, instance *inst, const char *output_file) {
-    if (succ == NULL) {
-        print_error("succ array is NULL");
-    }
-	assert(succ != NULL);
-    // Open gnuplot
-    FILE *gnuplot = popen("gnuplot -persist", "w");
-    if (gnuplot == NULL) {
-        print_error("Error opening gnuplot");
-    }
-
-    // Set up gnuplot configuration
-    fprintf(gnuplot, "set terminal pngcairo enhanced color font 'Helvetica,12' size 1000,720\n");
-    fprintf(gnuplot, "set output '%s'\n", output_file);
-    fprintf(gnuplot, "set title 'TSP Solution Path (Based on succ)' font 'Helvetica,16'\n");
-    fprintf(gnuplot, "set style line 1 lc rgb '#FF0000' lt 1 lw 2 pt 7 ps 1.5\n");
-    fprintf(gnuplot, "plot '-' with linespoints ls 1 title 'TSP Path'\n");
-
-    // Plot the solution path based on the succ array
-    int start = 0; // Assuming the tour starts at node 0
-    int current = start;
-
-    do {
-        fprintf(gnuplot, "%lf %lf\n", inst->points[current].x, inst->points[current].y);
-        current = succ[current];
-    } while (current != start);
-
-    // Close the tour by adding the first node at the end
-    fprintf(gnuplot, "%lf %lf\n", inst->points[start].x, inst->points[start].y);
-
-    // End data input
-    fprintf(gnuplot, "e\n");
-
-    // Close gnuplot
-    fflush(gnuplot);
-    pclose(gnuplot);
 }
 
 /**
@@ -343,14 +238,18 @@ int TSPopt(instance *inst) {
 	 * Maybe a tour struct should be passed as input to store the final solution of CPLEX
 	 ***********************************************************************************************/
     // Open CPLEX model
-    int error;
+    int error = 0;
     CPXENVptr env = CPXopenCPLEX(&error);
     if (env == NULL) {
-        print_error("CPXopenCPLEX() error");
+        char errormsg[CPXMESSAGEBUFSIZE];
+		CPXgeterrorstring(env, error, errormsg);
+        print_error(errormsg);
     }
     CPXLPptr lp = CPXcreateprob(env, &error, "TSP");
     if (lp == NULL) {
-        print_error("CPXcreateprob() error");
+		char errormsg[CPXMESSAGEBUFSIZE];
+		CPXgeterrorstring(env, error, errormsg);
+        print_error(errormsg);
     }
 
     build_model(inst, env, lp);
@@ -368,13 +267,13 @@ int TSPopt(instance *inst) {
 		print_error("CPXsetintparam() error");
 
 	int ncols = CPXgetnumcols(env, lp);
-	double objval = 0.0;
+	double objval = INF_COST;
 	int iter = 0;
 	int ncomp = 9999;
 	double *xstar = (double *)calloc(ncols, sizeof(double));
 	int *succ = (int *)malloc(inst->nnodes * sizeof(int));
     int *comp = (int *)malloc(inst->nnodes * sizeof(int));
-	// Flag to indicate if 2-opt is applied. Will be set to one if
+	// Flag to indicate if 2-opt is applied. Will be set to 1 if
 	// CPLEX is not able to solve the problem to the optimality
 	int two_opt_flag = 0;
 
@@ -406,7 +305,11 @@ int TSPopt(instance *inst) {
         fflush(NULL);
 	}
 
-	if (ncomp >= 2) {
+	if (iter <= 1) {
+		print_error("Increase the time limit");
+	}
+
+	if (ncomp >= 2 && iter > 1) {
 		if (VERBOSE > 1000 ) { printf("Number of components before solving: %d\n", ncomp); }
 		patching_heuristic(succ, &ncomp, comp, inst);
 		two_opt_flag = 1;
@@ -414,39 +317,11 @@ int TSPopt(instance *inst) {
 	}
 	
 	#ifdef DEBUG
-    int *degree = calloc(inst->nnodes, sizeof(int));
-	for ( int i = 0; i < inst->nnodes; i++ ) {
-		for ( int j = i+1; j < inst->nnodes; j++ ) {
-			int k = xpos(i,j,inst);
-			if ( (fabs(xstar[k]) > EPS) && (fabs(xstar[k]-1.0) > EPS)) print_error(" wrong xstar in build_sol()");
-			if ( xstar[k] > 0.5 ) {
-				++degree[i];
-				++degree[j];
-			}
-		}
-	}
-
-	// Checks if the degree of each node is 2
-	for ( int i = 0; i < inst->nnodes; i++ ) {
-		if ( degree[i] != 2 ) {
-			print_error("wrong degree in build_sol()");
-		 }
-	}	
-	free(degree);
+		check_degrees(inst, xstar);	
 	#endif
 
 	tour* solution = (tour *)malloc(sizeof(tour));
-	solution->cost = INF_COST;
-	solution->path = (int *)malloc((inst->nnodes + 1) * sizeof(int));
-	//fill solution->path with the solution from succ array starting from node 0
-	int start = 0;
-	int current = start;
-	do {
-		solution->path[current] = succ[current];
-		current = succ[current];
-	} while (current != start);
-	solution->path[inst->nnodes] = solution->path[0]; // Close the tour
-	compute_solution_cost(solution, inst);
+	reconstruct_sol(solution, succ, inst);
 	
 	if (two_opt_flag) {
 		if ( VERBOSE > 1000 ) { printf("Cost of the solution before 2-Opt: %lf\n", solution->cost); }
@@ -479,16 +354,12 @@ int TSPopt(instance *inst) {
     return 0;
 }
 
+
 void patching_heuristic(int* succ, int* ncomp, int* comp, instance* inst) {
 	if (succ == NULL) { print_error("Error occurred while allocating memory for succ\n"); }
 	if (ncomp == NULL) { print_error("Error occurred while allocating memory for ncomp\n"); }
 	if (comp == NULL) { print_error("Error occurred while allocating memory for comp\n"); }
 	if (inst == NULL) { print_error("Error occurred while allocating memory for inst\n"); }
-	assert(ncomp > 0);
-	assert(succ != NULL);
-	assert(comp != NULL);
-	assert(inst != NULL);
-	assert(ncomp != NULL);
 
 	while (*ncomp > 1) {
 		int best_i = -1;
@@ -500,71 +371,14 @@ void patching_heuristic(int* succ, int* ncomp, int* comp, instance* inst) {
 				if (i == j) continue;
 
 				if (comp[i] != comp[j]) {
-					// best delta between cross swap or straight swap
-					double delta_straight = inst->cost_matrix[i * inst->nnodes + j] +
-						inst->cost_matrix[succ[i] * inst->nnodes + succ[j]] -
-					 	inst->cost_matrix[i * inst->nnodes + succ[i]] -
-					 	inst->cost_matrix[j * inst->nnodes + succ[j]];
-                    //double delta_straight = INF_COST;
-
-					double delta_cross = inst->cost_matrix[i * inst->nnodes + succ[j]] +
-						inst->cost_matrix[succ[i] * inst->nnodes + j] -
-						inst->cost_matrix[i * inst->nnodes + succ[i]] -
-						inst->cost_matrix[j * inst->nnodes + succ[j]];
-					
-                    if (delta_straight + EPS_COST < best_delta || delta_cross + EPS_COST < best_delta) {
-						if (delta_cross < delta_straight) {
-							best_delta = delta_cross;
-							best_i = i;
-							best_j = j;
-							cross_flag = 1;
-						} else {
-							best_delta = delta_straight;
-							best_i = i;
-							best_j = j;
-							cross_flag = 0;
-						}
-					}
+					update_best_delta(i, j, succ, inst, &best_i, &best_j, &best_delta, &cross_flag);
 				}
 			}
 		}
 		if (cross_flag) {
-			int temp = succ[best_i];
-			succ[best_i] = succ[best_j];
-			succ[best_j] = temp;
-			for (int k = 0; k < inst->nnodes; k++) {
-				if (comp[k] == comp[best_j] && k != best_j) {
-					comp[k] = comp[best_i];
-				}
-			}
-            comp[best_j] = comp[best_i];
-			(*ncomp)--;
+			patch_cross_case(succ, comp, ncomp, best_i, best_j, inst);
 		} else {
-			int temp = succ[best_i];
-			succ[best_i] = best_j;
-			int past_node = succ[best_j];
-			int current_node = succ[past_node];
-			succ[past_node] = temp;
-
-			// reverse the component of best_j and succ[best_j]
-			// Start from succ[succ[best_j]] and reverse until best_j
-			int next_node = succ[current_node];
-			while (next_node != best_j) {
-				succ[current_node] = past_node;
-				past_node = current_node;
-				current_node = next_node;
-				next_node = succ[current_node];
-			}
-			succ[current_node] = past_node;
-			succ[best_j] = current_node;
-
-			for (int k = 0; k < inst->nnodes; k++) {
-				if (comp[k] == comp[best_j] && k != best_j) {
-					comp[k] = comp[best_i];
-				}
-			}
-			comp[best_j] = comp[best_i];
-			(*ncomp)--;
+			patch_straight_case(succ, comp, ncomp, best_i, best_j, inst);
 		}
 	}
 	if (VERBOSE > 2000) { printf("Finished patching heuristic\n"); }
