@@ -173,59 +173,196 @@ void build_model(instance *inst, CPXENVptr env, CPXLPptr lp) {
     free(cname);
 }
 
-/**
- * Helper function to add subtour elimination constraints. This would be used in a callback, but we're simplifying for now
- * @param env
- * @param lp
- * @param comp_index
- * @param comp
- * @param inst
- */
-void add_sec(CPXENVptr env, CPXLPptr lp, int comp_index, int *comp, instance *inst) {
+void add_sec(int* nnz, double* rhs, int comp_index, int* index, double* value, char** cname, int *comp, instance *inst) {
     if (comp == NULL) {
         print_error("comp array is NULL");
     }
-	assert(comp != NULL);
 
     int izero = 0;
     char sense = 'L';
-    double rhs = - 1.0;
-    int nnz = 0;
 
-    int ncols = CPXgetnumcols(env, lp);
-    int *index = (int *)malloc(ncols * sizeof(int));
-    double *value = (double *)malloc(ncols * sizeof(double));
-
-    char **cname = (char **)calloc(1, sizeof(char *));
-    if (cname == NULL) {
+    if (cname == NULL || cname[0] == NULL) {
         print_error("Memory allocation error for cname");
-    }
-	assert(cname != NULL);
-
-    cname[0] = (char *)calloc(100, sizeof(char));
-    if (cname[0] == NULL) {
-        print_error("Memory allocation error for cname[0]");
     }
 
     for (int i = 0; i < inst->nnodes; i++) {
         if (comp[i] != comp_index) { continue; }
-        rhs += 1.0;
+        *rhs += 1.0;
         for (int j = i+1; j < inst->nnodes; j++) {
             if (j == i) { continue; }
             if (comp[j] != comp_index) { continue; }
-            index[nnz] = xpos(i, j, inst);
-            value[nnz] = 1.0;
-            nnz++;
+            index[*nnz] = xpos(i, j, inst);
+            value[*nnz] = 1.0;
+            (*nnz)++;
             sprintf(cname[0], "SEC(%d)", comp_index);
         }
     }
-    if (CPXaddrows(env, lp, 0, 1, nnz, &rhs, &sense, &izero, index, value, NULL, cname))
-            print_error("wrong CPXaddrows [degree]");
-    
-    free(cname[0]);
-    free(cname);
-    free(value);
-    free(index);
+
+}
+
+void solver(CPXENVptr env, CPXLPptr lp, instance *inst, double *xstar, int *succ, int *comp, int *ncomp, double *objval) {
+    if (CPXmipopt(env, lp)) {
+        print_error("CPXmipopt() error");
+    }
+
+    int solstat = CPXgetstat(env, lp);
+    if (solstat != CPXMIP_OPTIMAL && solstat != CPXMIP_OPTIMAL_TOL && solstat != CPXMIP_FEASIBLE) {
+        printf("CPLEX Error: No feasible solution found for the given time limit.\nStatus: %d\n", solstat);
+        exit(1); // Exit the loop or handle the error
+    }
+
+    if (CPXgetx(env, lp, xstar, 0, inst->ncols - 1)) {
+        print_error("CPXgetx() error");
+    }
+
+    build_sol(xstar, inst, succ, comp, ncomp);
+
+    if (CPXgetobjval(env, lp, objval)) {
+        print_error("CPXgetobjval() error");
+    }
+}
+
+int benders(CPXENVptr env, CPXLPptr lp, instance *inst, int *succ, int ncomp, tour* solution) {
+
+	int iter = 0;
+	double objval = INF_COST;
+
+	char sense = 'L';
+	int izero = 0;
+
+	double *xstar = (double *)calloc(inst->ncols, sizeof(double));
+	int *comp = (int *)malloc(inst->nnodes * sizeof(int));
+
+	while (ncomp >= 2) {
+        iter++;
+		if (second() - inst->tstart > inst->timelimit) {
+			printf("Time limit reached\n");
+			break;
+		}
+		// apply to cplex the residual time left to solve the problem
+		double residual_time = inst->timelimit - (second() - inst->tstart); // The residual time limit that is left
+		CPXsetdblparam(env, CPX_PARAM_TILIM, residual_time);
+
+		solver(env, lp, inst, xstar, succ, comp, &ncomp, &objval);
+		
+		if (VERBOSE > 1000) {
+			printf("Iter %4d, Lower Bound: %10.2lf, Number of components: %4d, Time: %5.2lfs\n", iter, objval, ncomp, second()-inst->tstart);
+			fflush(NULL);
+		}
+
+		if (ncomp >= 2) {
+			for (int k = 1; k <= ncomp; k++) {
+
+				int nnz = 0;
+				double rhs = -1.0;
+				
+				int* index = (int *)malloc(inst->ncols * sizeof(int));
+				double* value = (double *)malloc(inst->ncols * sizeof(double));
+
+				char** cname = (char **)calloc(1, sizeof(char *));
+				cname[0] = (char *)calloc(100, sizeof(char));
+
+				if (index == NULL || value == NULL || xstar == NULL || cname == NULL || cname[0] == NULL) {
+					print_error("Memory allocation error");
+				}
+
+				add_sec(&nnz, &rhs, k, index, value, cname, comp, inst);
+				if (CPXaddrows(env, lp, 0, 1, nnz, &rhs, &sense, &izero, index, value, NULL, cname)) {
+					print_error("Wrong CPXaddrows [degree]");
+				}
+
+				free(cname[0]);
+				free(cname);
+				free(value);
+				free(index);
+			}
+		}
+
+		if (ncomp >= 2) {
+			patching_heuristic(succ, ncomp, comp, inst);
+			reconstruct_sol(solution, succ, inst);
+			two_opt(solution, inst);
+			check_sol(solution->path, solution->cost, inst);
+			if (VERBOSE > 100) { printf("Solution cost after 2-Opt: %lf\n", solution->cost); }
+		}
+
+        save_history_benders(objval, second()-inst->tstart, "../data/history_benders.txt");
+        fflush(NULL);
+	}
+
+	if (iter <= 1) {
+		print_error("Increase the time limit");
+	}
+
+	free(comp);
+	free(xstar);
+
+	return 0;
+
+}
+
+static int CPXPUBLIC my_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void *userhandle ) { 
+		
+		instance* inst = (instance*) userhandle;  
+		
+		char sense = 'L';
+		int izero = 0;
+		
+		double* xstar = (double*) malloc(inst->ncols * sizeof(double));  
+		int *comp = (int *)malloc(inst->nnodes * sizeof(int));
+		if (xstar == NULL || comp == NULL) {
+			print_error("Memory allocation error for xstar");
+		}
+
+		double objval = CPX_INFBOUND; 
+		
+		if ( CPXcallbackgetcandidatepoint(context, xstar, 0, inst->ncols-1, &objval) ){
+			print_error("CPXcallbackgetcandidatepoint error");
+		}
+		
+		for (int k = 1; k <= inst->nnodes; k++) {
+			int nnz = 0;
+			double rhs = -1.0;
+
+			int* index = (int *)malloc(inst->ncols * sizeof(int));
+			double* value = (double *)malloc(inst->ncols * sizeof(double));
+
+			char** cname = (char **)calloc(1, sizeof(char *));
+			cname[0] = (char *)calloc(100, sizeof(char));
+
+			if (index == NULL || value == NULL) {
+				print_error("Memory allocation error");
+			}
+
+			add_sec(&nnz, &rhs, k, index, value, comp, cname, inst);
+			if ( CPXcallbackrejectcandidate(context, 1, nnz, &rhs, &sense, &izero, index, value) ) {
+				print_error("CPXcallbackrejectcandidate() error"); // reject the solution and adds one cut 
+			}
+
+			free(cname[0]);
+			free(cname);
+			free(value);
+			free(index);
+		}
+		
+		free(comp);
+		free(xstar); 
+
+		return 0; 
+	}
+
+int branch_and_cut(CPXENVptr env, CPXLPptr lp, CPXLONG contextid, instance *inst, double* xstar, int *succ, int *comp, int ncomp, tour* solution) {
+	
+	double objval = INF_COST;
+
+	if ( CPXcallbacksetfunc(env, lp, contextid, my_callback, inst) ) {
+		print_error("CPXcallbacksetfunc() error");
+	}
+
+	solver(env, lp, inst, xstar, succ, comp, &ncomp, &objval);
+
+	return 0;
+
 }
 
 /**
@@ -233,7 +370,7 @@ void add_sec(CPXENVptr env, CPXLPptr lp, int comp_index, int *comp, instance *in
  * @param inst
  * @return
  */
-int TSPopt(instance *inst) {
+int TSPopt(instance *inst, int alg) {
 	/************************************************************************************************
 	 * Maybe a tour struct should be passed as input to store the final solution of CPLEX
 	 ***********************************************************************************************/
@@ -266,61 +403,20 @@ int TSPopt(instance *inst) {
 	if (CPXsetintparam(env, CPXPARAM_RandomSeed, inst->seed))
 		print_error("CPXsetintparam() error");
 
-	int ncols = CPXgetnumcols(env, lp);
-	double objval = INF_COST;
-	int iter = 0;
+	inst->ncols = CPXgetnumcols(env, lp);
 	int ncomp = 9999;
-	double *xstar = (double *)calloc(ncols, sizeof(double));
 	int *succ = (int *)malloc(inst->nnodes * sizeof(int));
-    int *comp = (int *)malloc(inst->nnodes * sizeof(int));
 	// Flag to indicate if 2-opt is applied. Will be set to 1 if
 	// CPLEX is not able to solve the problem to the optimality
 	int two_opt_flag = 0;
 	tour* solution = (tour *)malloc(sizeof(tour));
+	CPXLONG contextid = CPX_CALLBACKCONTEXT_CANDIDATE;
 
-	while (ncomp >= 2) {
-        iter++;
-		if (second() - inst->tstart > inst->timelimit) {
-			printf("Time limit reached\n");
-			break;
-		}
-		// apply to cplex the residual time left to solve the problem
-		double residual_time = inst->timelimit - (second() - inst->tstart); // The residual time limit that is left
-		CPXsetdblparam(env, CPX_PARAM_TILIM, residual_time);
-
-		if ( CPXmipopt(env, lp) ) { print_error("CPXmipopt() error"); }
-		int solstat = CPXgetstat(env, lp);
-		if (solstat != CPXMIP_OPTIMAL && solstat != CPXMIP_OPTIMAL_TOL && solstat != CPXMIP_FEASIBLE) {
-			printf("CPLEX Error: No feasible solution found for the given time limit.\nStatus: %d\n", solstat);
-			exit(1); // Exit the loop or handle the error
-		}
-		if ( CPXgetx(env, lp, xstar, 0, ncols-1) ) { print_error("CPXgetx() error"); }
-		build_sol(xstar, inst, succ, comp, &ncomp);
-        if ( CPXgetobjval(env, lp, &objval) ) { print_error("CPXgetobjval() error"); }
-		if (VERBOSE > 1000) {
-			printf("Iter %4d, Lower Bound: %10.2lf, Number of components: %4d, Time: %5.2lfs\n", iter, objval, ncomp, second()-inst->tstart);
-			fflush(NULL);
-		}
-
-		if (ncomp >= 2) {
-			for (int k = 1; k <= ncomp; k++) {
-				add_sec(env, lp, k, comp, inst);
-			}
-		}
-		if (ncomp >= 2) {
-			patching_heuristic(succ, ncomp, comp, inst);
-			reconstruct_sol(solution, succ, inst);
-			two_opt(solution, inst);
-			check_sol(solution->path, solution->cost, inst);
-			if (VERBOSE > 100) { printf("Solution cost after 2-Opt: %lf\n", solution->cost); }
-		}
-
-        save_history_benders(objval, second()-inst->tstart, "../data/history_benders.txt");
-        fflush(NULL);
-	}
-
-	if (iter <= 1) {
-		print_error("Increase the time limit");
+	if (alg == 6){
+		// branch_and_cut(env, lp, contextid, inst, succ, comp, ncomp, solution);
+		printf("Running Branch and Cut...\n");
+	} else {
+		benders(env, lp, inst, succ, ncomp, solution);
 	}
 	
 	#ifdef DEBUG
@@ -338,9 +434,7 @@ int TSPopt(instance *inst) {
 	// Free allocated memory
 	free(solution->path);
 	free(solution);
-	free(comp);
     free(succ);
-    free(xstar);
 
     // Free and close CPLEX model
     CPXfreeprob(env, &lp);

@@ -13,18 +13,6 @@ void print_error(const char *err) {
 } 
 
 /**
- * Print the menu for the algorithm selection
- */
-void print_menu() {
-    printf("\nAvailable algorithms:\n");
-    printf("1 - Nearest Neighbor\n");
-    printf("2 - Nearest Neighbor + 2-OPT Refinement\n");
-    printf("3 - Variable Neighborhood Search (VNS)\n");
-    printf("4 - Tabu Search\n");
-    printf("5 - Grasp Multi-Start\n");
-}
-
-/**
  * Free the instance memory
  * @param inst instance to be freed
  */
@@ -131,7 +119,7 @@ void read_input(instance *inst) {
  * @param argv array of parameters
  * @param inst instance to be set
  */
-void parse_command_line(int argc, char** argv, instance *inst, parameters *params) { 
+void parse_command_line(int argc, char** argv, instance *inst, parameters *params, int *alg) {
 	
 	if ( VERBOSE >= 100 ) printf("Running %s with %d parameters!\n", argv[0], argc-1);
     
@@ -144,6 +132,7 @@ void parse_command_line(int argc, char** argv, instance *inst, parameters *param
     inst->best_sol = (tour*)malloc(sizeof(tour));
     inst->best_sol->path = NULL;
     inst->best_sol->cost = INF_COST;
+    inst->ncols = -1;
 
     params->num_kicks = 3;
     params->interval_tenure = 75;
@@ -195,7 +184,7 @@ void parse_command_line(int argc, char** argv, instance *inst, parameters *param
         printf("-time_limit <value>    : Time limit for the algorithm (in seconds)\n");
         printf("-seed <value>          : Random seed for reproducibility\n");
         printf("-nodes <value>         : Number of nodes (if no input file is provided)\n");
-        printf("-alg <algorithm>       : Algorithm choice (1: GREEDY, 2: GREEDY+2OPT, 3: VNS, 4: TABU, 5: GRASP)\n");
+        printf("-alg <algorithm>       : Algorithm choice (1: GREEDY, 2: GREEDY+2OPT, 3: VNS, 4: TABU, 5: GRASP, 6: Branch & Cut, 7: Benders)\n");
         printf("-help or --help        : Display this help message\n");
         printf("----------------------------------------------------------------------------------------------\n\n");
         exit(0); 
@@ -209,10 +198,10 @@ void parse_command_line(int argc, char** argv, instance *inst, parameters *param
         }
     }
 
-    if (alg_choice < 0 || alg_choice > 6) {
+    if (alg_choice < 0 || alg_choice > 7) {
         print_error("Algorithm choice not defined or out of range\n");
     } else {
-        alg = alg_choice;
+        *alg = alg_choice;
         printf("Algorithm choice: %d\n", alg);
     }        
 	

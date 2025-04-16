@@ -5,11 +5,11 @@
 #include <cplex.h>
 #include <k_opt.h>
 
-int TSPopt(instance *inst);
+int TSPopt(instance *inst, int alg);
 int xpos(int i, int j, instance *inst);
 void build_model(instance *inst, CPXENVptr env, CPXLPptr lp);
 void build_sol(const double *xstar, instance *inst, int *succ, int *comp, int *ncomp);
-void add_sec(CPXENVptr env, CPXLPptr lp, int comp_index, int *comp, instance *inst);
+void add_sec(int* nnz, double* rhs, int comp_index, int* index, double* value, char** cname, int *comp, instance *inst);
 void xstar_to_solution(const double *xstar, instance *inst, int *solution);
 void plot_xstar_path(const double *xstar, instance *inst, const char *output_file);
 void save_history_benders(double cost, double time, const char* filename);

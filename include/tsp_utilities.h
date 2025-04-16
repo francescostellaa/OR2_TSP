@@ -43,6 +43,7 @@ typedef struct {
     char input_file[256]; // input file name
     point* points; // points coordinates
     int integer_costs; // 1 if costs are integer, 0 otherwise
+    int ncols;
 
     double* cost_matrix; // cost matrix
     tour* best_sol;
@@ -58,7 +59,9 @@ typedef struct {
 // 3: VNS
 // 4: Tabu Search
 // 5: GRASP
-extern int alg;
+// 6: Brand and Cut
+// 7: Benders
+// extern int alg;
 
 /*
  * Parameters for the algorithms
@@ -73,7 +76,7 @@ typedef struct {
 
 void free_instance(instance *inst);
 void read_input(instance *inst);
-void parse_command_line(int argc, char** argv, instance *inst, parameters *params);
+void parse_command_line(int argc, char** argv, instance *inst, parameters *params, int *alg);
 double random01();
 void random_instance_generator(instance *inst);
 void plot_solution(const instance *inst, int* solution);
