@@ -351,15 +351,19 @@ static int CPXPUBLIC my_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contexti
 		return 0; 
 	}
 
-int branch_and_cut(CPXENVptr env, CPXLPptr lp, CPXLONG contextid, instance *inst, double* xstar, int *succ, int *comp, int ncomp, tour* solution) {
+int branch_and_cut(CPXENVptr env, CPXLPptr lp, CPXLONG contextid, instance *inst, int *succ, int ncomp, tour* solution) {
 	
 	double objval = INF_COST;
+	int *comp = (int *)malloc(inst->nnodes * sizeof(int));
+	int *xstar = (int *)malloc(inst->ncols * sizeof(int));
 
 	if ( CPXcallbacksetfunc(env, lp, contextid, my_callback, inst) ) {
 		print_error("CPXcallbacksetfunc() error");
 	}
 
 	solver(env, lp, inst, xstar, succ, comp, &ncomp, &objval);
+	free(comp);
+	free(xstar);
 
 	return 0;
 
@@ -413,8 +417,8 @@ int TSPopt(instance *inst, int alg) {
 	CPXLONG contextid = CPX_CALLBACKCONTEXT_CANDIDATE;
 
 	if (alg == 6){
-		// branch_and_cut(env, lp, contextid, inst, succ, comp, ncomp, solution);
 		printf("Running Branch and Cut...\n");
+		branch_and_cut(env, lp, contextid, inst, succ, ncomp, solution);
 	} else {
 		benders(env, lp, inst, succ, ncomp, solution);
 	}
