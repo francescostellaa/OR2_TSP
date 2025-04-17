@@ -374,6 +374,11 @@ int branch_and_cut(CPXENVptr env, CPXLPptr lp, CPXLONG contextid, instance *inst
 
 	solver(env, lp, inst, xstar, succ, comp, &ncomp, &objval);
 
+	if (VERBOSE > 1000) {
+		printf("Lower Bound: %10.2lf, Number of components: %4d, Time: %5.2lfs\n", objval, ncomp, second()-inst->tstart);
+		fflush(NULL);
+	}
+
 	if (ncomp >= 2) {
 		patching_heuristic(succ, ncomp, comp, inst);
 		reconstruct_sol(solution, succ, inst);
