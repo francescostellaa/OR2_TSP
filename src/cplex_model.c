@@ -181,9 +181,13 @@ void add_sec(int* nnz, double* rhs, int comp_index, int* index, double* value, c
     int izero = 0;
     char sense = 'L';
 
-    if (cname == NULL || cname[0] == NULL) {
+    if (cname == NULL) {
+    	printf("HERE\n");
         print_error("Memory allocation error for cname");
     }
+	if (cname[0] == NULL) {
+		print_error("Memory allocation error for cname[0]");
+	}
 
     for (int i = 0; i < inst->nnodes; i++) {
         if (comp[i] != comp_index) { continue; }
@@ -206,10 +210,10 @@ void solver(CPXENVptr env, CPXLPptr lp, instance *inst, double *xstar, int *succ
     }
 
     int solstat = CPXgetstat(env, lp);
-    if (solstat != CPXMIP_OPTIMAL && solstat != CPXMIP_OPTIMAL_TOL && solstat != CPXMIP_FEASIBLE) {
+    /*if (solstat != CPXMIP_OPTIMAL && solstat != CPXMIP_OPTIMAL_TOL && solstat != CPXMIP_FEASIBLE) {
         printf("CPLEX Error: No feasible solution found for the given time limit.\nStatus: %d\n", solstat);
         exit(1); // Exit the loop or handle the error
-    }
+    }*/
 
     if (CPXgetx(env, lp, xstar, 0, inst->ncols - 1)) {
         print_error("CPXgetx() error");
@@ -267,8 +271,10 @@ int benders(CPXENVptr env, CPXLPptr lp, instance *inst, int *succ, int ncomp, to
 				}
 
 				add_sec(&nnz, &rhs, k, index, value, cname, comp, inst);
-				if (CPXaddrows(env, lp, 0, 1, nnz, &rhs, &sense, &izero, index, value, NULL, cname)) {
-					print_error("Wrong CPXaddrows [degree]");
+				if (nnz > 0) {
+					if (CPXaddrows(env, lp, 0, 1, nnz, &rhs, &sense, &izero, index, value, NULL, cname)) {
+						print_error("Wrong CPXaddrows [degree]");
+					}
 				}
 
 				free(cname[0]);
@@ -303,29 +309,32 @@ int benders(CPXENVptr env, CPXLPptr lp, instance *inst, int *succ, int ncomp, to
 
 static int CPXPUBLIC my_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void *userhandle ) { 
 		
-		instance* inst = (instance*) userhandle;  
+	instance* inst = (instance*) userhandle;
 		
-		char sense = 'L';
-		int izero = 0;
-		
-		double* xstar = (double*) malloc(inst->ncols * sizeof(double));  
-		int *comp = (int *)malloc(inst->nnodes * sizeof(int));
-		if (xstar == NULL || comp == NULL) {
-			print_error("Memory allocation error for xstar");
-		}
+	char sense = 'L';
+	int izero = 0;
 
-		double objval = CPX_INFBOUND; 
-		
-		if ( CPXcallbackgetcandidatepoint(context, xstar, 0, inst->ncols-1, &objval) ){
-			print_error("CPXcallbackgetcandidatepoint error");
-		}
-		
-		for (int k = 1; k <= inst->nnodes; k++) {
+	double* xstar = (double*) malloc(inst->ncols * sizeof(double));
+	int *succ = (int*)malloc(inst->nnodes * sizeof(int));
+	int *comp = (int *)malloc(inst->nnodes * sizeof(int));
+	if (xstar == NULL || comp == NULL) {
+		print_error("Memory allocation error for xstar");
+	}
+
+	double objval = CPX_INFBOUND;
+	int ncomp = 0;
+	if ( CPXcallbackgetcandidatepoint(context, xstar, 0, inst->ncols-1, &objval) ){
+		print_error("CPXcallbackgetcandidatepoint error");
+	}
+	build_sol(xstar, inst, succ, comp, &ncomp);
+
+	if (ncomp >= 2) {
+
+		int* index = (int *)malloc(inst->ncols * sizeof(int));
+		double* value = (double *)malloc(inst->ncols * sizeof(double));
+		for (int k = 1; k <= ncomp; k++) {
 			int nnz = 0;
 			double rhs = -1.0;
-
-			int* index = (int *)malloc(inst->ncols * sizeof(int));
-			double* value = (double *)malloc(inst->ncols * sizeof(double));
 
 			char** cname = (char **)calloc(1, sizeof(char *));
 			cname[0] = (char *)calloc(100, sizeof(char));
@@ -334,34 +343,43 @@ static int CPXPUBLIC my_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contexti
 				print_error("Memory allocation error");
 			}
 
-			add_sec(&nnz, &rhs, k, index, value, comp, cname, inst);
-			if ( CPXcallbackrejectcandidate(context, 1, nnz, &rhs, &sense, &izero, index, value) ) {
-				print_error("CPXcallbackrejectcandidate() error"); // reject the solution and adds one cut 
+			add_sec(&nnz, &rhs, k, index, value, cname, comp, inst);
+			if (nnz > 0) {
+				if ( CPXcallbackrejectcandidate(context, 1, nnz, &rhs, &sense, &izero, index, value) ) {
+					print_error("CPXcallbackrejectcandidate() error"); // reject the solution and adds one cut
+				}
 			}
-
 			free(cname[0]);
 			free(cname);
-			free(value);
-			free(index);
 		}
-		
-		free(comp);
-		free(xstar); 
 
-		return 0; 
+		free(value);
+		free(index);
 	}
+	free(comp);
+	free(xstar);
+
+	return 0;
+}
 
 int branch_and_cut(CPXENVptr env, CPXLPptr lp, CPXLONG contextid, instance *inst, int *succ, int ncomp, tour* solution) {
 	
 	double objval = INF_COST;
 	int *comp = (int *)malloc(inst->nnodes * sizeof(int));
-	int *xstar = (int *)malloc(inst->ncols * sizeof(int));
+	double *xstar = (double*)malloc(inst->ncols * sizeof(double));
 
 	if ( CPXcallbacksetfunc(env, lp, contextid, my_callback, inst) ) {
 		print_error("CPXcallbacksetfunc() error");
 	}
 
 	solver(env, lp, inst, xstar, succ, comp, &ncomp, &objval);
+
+	if (ncomp >= 2) {
+		patching_heuristic(succ, ncomp, comp, inst);
+		reconstruct_sol(solution, succ, inst);
+		two_opt(solution, inst);
+		check_sol(solution->path, solution->cost, inst);
+	}
 	free(comp);
 	free(xstar);
 
@@ -375,9 +393,6 @@ int branch_and_cut(CPXENVptr env, CPXLPptr lp, CPXLONG contextid, instance *inst
  * @return
  */
 int TSPopt(instance *inst, int alg) {
-	/************************************************************************************************
-	 * Maybe a tour struct should be passed as input to store the final solution of CPLEX
-	 ***********************************************************************************************/
     // Open CPLEX model
     int error = 0;
     CPXENVptr env = CPXopenCPLEX(&error);
@@ -427,9 +442,13 @@ int TSPopt(instance *inst, int alg) {
 		check_degrees(inst, xstar);	
 	#endif
 
+	/*for (int i = 0; i < inst->nnodes; i++) {
+		succ[solution->path[i]] = solution->path[(i+1) % inst->nnodes];
+	}*/
 	reconstruct_sol(solution, succ, inst);
-	plot_solution(inst, solution->path);
+	//two_opt(solution, inst);
 	update_best_sol(inst, solution);
+	plot_solution(inst, solution->path);
 
 	// Plot the solution path of both CPLEX
     plot_succ_path(succ, inst, "../data/solution_cplex.png");
