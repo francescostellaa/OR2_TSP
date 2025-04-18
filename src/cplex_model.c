@@ -25,10 +25,6 @@ void build_sol(const double *xstar, instance *inst, int *succ, int *comp, int *n
 		printf("xstar NULL\n");
 	}
 
-	assert(succ != NULL);
-	assert(comp != NULL);
-	assert(xstar != NULL);
-
 #ifdef DEBUG
 	int *degree = calloc(inst->nnodes, sizeof(int));
 	for ( int i = 0; i < inst->nnodes; i++ )
@@ -74,7 +70,7 @@ void build_sol(const double *xstar, instance *inst, int *succ, int *comp, int *n
 			done = 1;
 			for ( int j = 0; j < inst->nnodes; j++ )
 			{
-				if ( i != j && xstar[xpos(i,j,inst)] > 0.5 && comp[j] == -1 ) // the edge [i,j] is selected in xstar and j was not visited before 
+				if ( i != j && xstar[xpos(i,j,inst)] > 0.5 && comp[j] == -1 ) // the edge [i,j] is selected in xstar and j was not visited before
 				{
 					succ[i] = j;
 					i = j;
@@ -173,6 +169,17 @@ void build_model(instance *inst, CPXENVptr env, CPXLPptr lp) {
     free(cname);
 }
 
+/**
+ * Add a subtour elimination constraint (SEC) to the model
+ * @param nnz
+ * @param rhs
+ * @param comp_index
+ * @param index
+ * @param value
+ * @param cname
+ * @param comp
+ * @param inst
+ */
 void add_sec(int* nnz, double* rhs, int comp_index, int* index, double* value, char** cname, int *comp, instance *inst) {
     if (comp == NULL) {
         print_error("comp array is NULL");
@@ -204,8 +211,24 @@ void add_sec(int* nnz, double* rhs, int comp_index, int* index, double* value, c
 
 }
 
-void solver(CPXENVptr env, CPXLPptr lp, instance *inst, double *xstar, int *succ, int *comp, int *ncomp, double *objval) {
-    if (CPXmipopt(env, lp)) {
+/**
+ * Solve the model using CPLEX
+ * @param env
+ * @param lp
+ * @param inst
+ * @param xstar
+ * @param succ
+ * @param comp
+ * @param ncomp
+ * @param objval
+ */
+void solver(CPXENVptr env, CPXLPptr lp, instance *inst, double *xstar, int *succ, int *comp, int *ncomp, double *objval, int mode) {
+
+	if (mode) {
+		warm_start(env, lp, succ, inst);
+	}
+
+	if (CPXmipopt(env, lp)) {
         print_error("CPXmipopt() error");
     }
 
@@ -224,9 +247,55 @@ void solver(CPXENVptr env, CPXLPptr lp, instance *inst, double *xstar, int *succ
     if (CPXgetobjval(env, lp, objval)) {
         print_error("CPXgetobjval() error");
     }
+
 }
 
-int benders(CPXENVptr env, CPXLPptr lp, instance *inst, int *succ, int ncomp, tour* solution) {
+
+/**
+ * Warm start the solution
+ * @param succ
+ * @param inst
+ * @return
+ */
+int warm_start(CPXENVptr env, CPXLPptr lp, int* succ, instance *inst) {
+	tour* solution = malloc(sizeof(tour));
+	solution->path = malloc((inst->nnodes + 1) * sizeof(int));
+	solution->cost = INF_COST;
+
+	greedy(0, solution, 1, inst);
+	vns(inst, solution, inst->timelimit * 0.01, 3);
+
+	from_solution_to_succ(succ, solution, inst);
+
+	double *xheu = calloc(inst->ncols, sizeof(double));  // all zeros, initially
+
+	for ( int i = 0; i < inst->nnodes; i++ ) xheu[xpos(i,succ[i],inst)] = 1.0;
+	int *ind = malloc(inst->ncols * sizeof(int));
+	for ( int j = 0; j < inst->ncols; j++ ) ind[j] = j;
+	int effortlevel = CPX_MIPSTART_NOCHECK;
+	int beg = 0;
+	if ( CPXaddmipstarts(env, lp, 1, inst->ncols, &beg, ind, xheu, &effortlevel, NULL)) {
+		print_error("CPXaddmipstarts() error");
+	}
+
+	free(ind);
+	free(xheu);
+	free(solution->path);
+	free(solution);
+	return 0;
+}
+
+/**
+ * Berder's loop algorithm
+ * @param env
+ * @param lp
+ * @param inst
+ * @param succ
+ * @param ncomp
+ * @param solution
+ * @return
+ */
+int benders(CPXENVptr env, CPXLPptr lp, instance *inst, int *succ, int ncomp, tour* solution, int mode) {
 
 	int iter = 0;
 	double objval = INF_COST;
@@ -247,7 +316,7 @@ int benders(CPXENVptr env, CPXLPptr lp, instance *inst, int *succ, int ncomp, to
 		double residual_time = inst->timelimit - (second() - inst->tstart); // The residual time limit that is left
 		CPXsetdblparam(env, CPX_PARAM_TILIM, residual_time);
 
-		solver(env, lp, inst, xstar, succ, comp, &ncomp, &objval);
+		solver(env, lp, inst, xstar, succ, comp, &ncomp, &objval, mode);
 		
 		if (VERBOSE > 1000) {
 			printf("Iter %4d, Lower Bound: %10.2lf, Number of components: %4d, Time: %5.2lfs\n", iter, objval, ncomp, second()-inst->tstart);
@@ -287,9 +356,10 @@ int benders(CPXENVptr env, CPXLPptr lp, instance *inst, int *succ, int ncomp, to
 		if (ncomp >= 2) {
 			patching_heuristic(succ, ncomp, comp, inst);
 			reconstruct_sol(solution, succ, inst);
+			if (VERBOSE > 1000) { printf("Solution cost before 2-Opt: %lf\n", solution->cost); }
 			two_opt(solution, inst);
 			check_sol(solution->path, solution->cost, inst);
-			if (VERBOSE > 100) { printf("Solution cost after 2-Opt: %lf\n", solution->cost); }
+			if (VERBOSE > 1000) { printf("Solution cost after 2-Opt: %lf\n", solution->cost); }
 		}
 
         save_history_benders(objval, second()-inst->tstart, "../data/history_benders.txt");
@@ -300,6 +370,8 @@ int benders(CPXENVptr env, CPXLPptr lp, instance *inst, int *succ, int ncomp, to
 		print_error("Increase the time limit");
 	}
 
+	plot_cost_benders("../data/history_benders.txt", "../data/history_benders.png");
+
 	free(comp);
 	free(xstar);
 
@@ -307,6 +379,13 @@ int benders(CPXENVptr env, CPXLPptr lp, instance *inst, int *succ, int ncomp, to
 
 }
 
+/**
+ * Callback function for CPLEX to add cuts
+ * @param context
+ * @param contextid
+ * @param userhandle
+ * @return
+ */
 static int CPXPUBLIC my_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void *userhandle ) { 
 		
 	instance* inst = (instance*) userhandle;
@@ -362,7 +441,7 @@ static int CPXPUBLIC my_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contexti
 	return 0;
 }
 
-int branch_and_cut(CPXENVptr env, CPXLPptr lp, CPXLONG contextid, instance *inst, int *succ, int ncomp, tour* solution) {
+int branch_and_cut(CPXENVptr env, CPXLPptr lp, CPXLONG contextid, instance *inst, int *succ, int ncomp, tour* solution, int mode) {
 	
 	double objval = INF_COST;
 	int *comp = (int *)malloc(inst->nnodes * sizeof(int));
@@ -372,7 +451,7 @@ int branch_and_cut(CPXENVptr env, CPXLPptr lp, CPXLONG contextid, instance *inst
 		print_error("CPXcallbacksetfunc() error");
 	}
 
-	solver(env, lp, inst, xstar, succ, comp, &ncomp, &objval);
+	solver(env, lp, inst, xstar, succ, comp, &ncomp, &objval, mode);
 
 	if (VERBOSE > 1000) {
 		printf("Lower Bound: %10.2lf, Number of components: %4d, Time: %5.2lfs\n", objval, ncomp, second()-inst->tstart);
@@ -385,9 +464,9 @@ int branch_and_cut(CPXENVptr env, CPXLPptr lp, CPXLONG contextid, instance *inst
 		two_opt(solution, inst);
 		check_sol(solution->path, solution->cost, inst);
 	}
+
 	free(comp);
 	free(xstar);
-
 	return 0;
 
 }
@@ -395,9 +474,11 @@ int branch_and_cut(CPXENVptr env, CPXLPptr lp, CPXLONG contextid, instance *inst
 /**
  * Solve the TSP problem using CPLEX
  * @param inst
+ * @param alg
+ * @param mode
  * @return
  */
-int TSPopt(instance *inst, int alg) {
+int TSPopt(instance *inst, int alg, int mode) {
     // Open CPLEX model
     int error = 0;
     CPXENVptr env = CPXopenCPLEX(&error);
@@ -437,10 +518,9 @@ int TSPopt(instance *inst, int alg) {
 	CPXLONG contextid = CPX_CALLBACKCONTEXT_CANDIDATE;
 
 	if (alg == 6){
-		printf("Running Branch and Cut...\n");
-		branch_and_cut(env, lp, contextid, inst, succ, ncomp, solution);
+		branch_and_cut(env, lp, contextid, inst, succ, ncomp, solution, mode);
 	} else {
-		benders(env, lp, inst, succ, ncomp, solution);
+		benders(env, lp, inst, succ, ncomp, solution, mode);
 	}
 	
 	#ifdef DEBUG
@@ -457,7 +537,7 @@ int TSPopt(instance *inst, int alg) {
 
 	// Plot the solution path of both CPLEX
     plot_succ_path(succ, inst, "../data/solution_cplex.png");
-    plot_cost_benders("../data/history_benders.txt", "../data/history_benders.png");
+
 
 	// Free allocated memory
 	free(solution->path);

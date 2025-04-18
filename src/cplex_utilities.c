@@ -10,14 +10,14 @@
 void save_history_benders(double cost, double time, const char* filename) {
     static int first_call = 0;
 
-    FILE *file = NULL;
-
+	FILE *file = NULL;
     // First call: erase file contents
     if (!first_call) {
+
         file = fopen(filename, "w");
         first_call = 1;
     } else {
-        file = fopen(filename, "a");
+        file = fopen(filename, "ab+");
     }
 
     if (file == NULL) {
@@ -98,6 +98,32 @@ void plot_succ_path(const int *succ, instance *inst, const char *output_file) {
     // Close gnuplot
     fflush(gnuplot);
     pclose(gnuplot);
+}
+
+void from_solution_to_succ(int* succ, tour* solution, const instance* inst) {
+
+	if (solution == NULL) {
+		print_error("solution is NULL");
+	}
+	if (succ == NULL) {
+		print_error("succ is NULL");
+	}
+	if (inst == NULL) {
+		print_error("inst is NULL");
+	}
+
+	//fill succ with the solution obtained using heuristic
+	int start = 0;
+	int current = start;
+	for (int i = 0; i < inst->nnodes; i++) {
+		succ[solution->path[i]] = solution->path[i + 1];
+    }
+
+	/*do {
+		succ[current] = solution->path[current + 1];
+		//current = succ[current];
+		current = solution->path[current + 1];
+	} while (current != start);*/
 }
 
 /**

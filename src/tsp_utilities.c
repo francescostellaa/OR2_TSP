@@ -1,7 +1,5 @@
 #include <tsp_utilities.h>
 
-int alg = -1;
-
 /**
  * Print error message and exit the program
  * @param err error message
@@ -114,12 +112,15 @@ void read_input(instance *inst) {
 }
 
 /**
- * Parse the command line parameters and set the instance values
- * @param argc number of parameters
- * @param argv array of parameters
- * @param inst instance to be set
+ * Command line parser
+ * @param argc
+ * @param argv
+ * @param inst
+ * @param params
+ * @param alg
+ * @param mode
  */
-void parse_command_line(int argc, char** argv, instance *inst, parameters *params, int *alg) {
+void parse_command_line(int argc, char** argv, instance *inst, parameters *params, int *alg, int* mode) {
 	
 	if ( VERBOSE >= 100 ) printf("Running %s with %d parameters!\n", argv[0], argc-1);
     
@@ -141,6 +142,7 @@ void parse_command_line(int argc, char** argv, instance *inst, parameters *param
     int help = 0; if ( argc < 1 ) help = 1;// if no parameters, print help
     int node_flag = 1, number_nodes = 0;
     int alg_choice = -1;
+    int mode_choice = 0; // Warm start flag
 	for ( int i = 1; i < argc; i++ ) { 
         if ( strcmp(argv[i],"-file") == 0 ) { strcpy(inst->input_file,argv[++i]); node_flag = 0; continue; }
 		if ( strcmp(argv[i],"-input") == 0 ) { strcpy(inst->input_file,argv[++i]); node_flag = 0; continue; }
@@ -172,6 +174,7 @@ void parse_command_line(int argc, char** argv, instance *inst, parameters *param
             }
             continue; 
         }
+	    if ( strcmp(argv[i],"-mode") == 0 ) { mode_choice = atoi(argv[++i]); continue; }
         if ( strcmp(argv[i],"-help") == 0 || strcmp(argv[i],"--help") == 0 ) { 
             help = 1; 
             break; 
@@ -185,6 +188,10 @@ void parse_command_line(int argc, char** argv, instance *inst, parameters *param
         printf("-seed <value>          : Random seed for reproducibility\n");
         printf("-nodes <value>         : Number of nodes (if no input file is provided)\n");
         printf("-alg <algorithm>       : Algorithm choice (1: GREEDY, 2: GREEDY+2OPT, 3: VNS, 4: TABU, 5: GRASP, 6: Branch & Cut, 7: Benders)\n");
+        printf("-num_kicks <value>    : Number of kicks for VNS (default: 3)\n");
+        printf("-interval_tenure <value> : Interval tenure for Tabu Search (default: 75)\n");
+        printf("-tenure_scaling <value> : Tenure scaling for Tabu Search (default: 0.5)\n");
+        printf("-mode <value>         : Warm start mode (0: no warm start, 1: warm start, default: 0)\n");
         printf("-help or --help        : Display this help message\n");
         printf("----------------------------------------------------------------------------------------------\n\n");
         exit(0); 
@@ -202,8 +209,14 @@ void parse_command_line(int argc, char** argv, instance *inst, parameters *param
         print_error("Algorithm choice not defined or out of range\n");
     } else {
         *alg = alg_choice;
-        printf("Algorithm choice: %d\n", alg);
-    }        
+        printf("Algorithm choice: %d\n", *alg);
+    }
+
+    if (mode_choice < 0 || mode_choice > 1) {
+        print_error("Mode choice out of range\n");
+    } else {
+        *mode = mode_choice;
+    }
 	
 }
 

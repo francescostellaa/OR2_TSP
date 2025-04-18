@@ -27,7 +27,7 @@ int vns(const instance* inst, tour* solution, double timelimit, int num_kicks) {
 
         double current_cost = INF_COST;
         if (second() - inst->tstart > timelimit) {
-            if (VERBOSE >= 100) { printf("Time limit reached\n"); }
+            if (VERBOSE >= 100) { printf("Time limit of VNS reached\n"); }
             break;
         }
 

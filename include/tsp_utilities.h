@@ -76,7 +76,7 @@ typedef struct {
 
 void free_instance(instance *inst);
 void read_input(instance *inst);
-void parse_command_line(int argc, char** argv, instance *inst, parameters *params, int *alg);
+void parse_command_line(int argc, char** argv, instance *inst, parameters *params, int *alg, int* mode);
 double random01();
 void random_instance_generator(instance *inst);
 void plot_solution(const instance *inst, int* solution);
