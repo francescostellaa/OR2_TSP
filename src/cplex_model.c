@@ -222,9 +222,9 @@ void add_sec(int* nnz, double* rhs, int comp_index, int* index, double* value, c
  * @param ncomp
  * @param objval
  */
-void solver(CPXENVptr env, CPXLPptr lp, instance *inst, double *xstar, int *succ, int *comp, int *ncomp, double *objval, int mode) {
+void solver(CPXENVptr env, CPXLPptr lp, instance *inst, double *xstar, int *succ, int *comp, int *ncomp, double *objval) {
 
-	if (mode) {
+	if (inst->mode == 1) {
 		warm_start(env, lp, succ, inst);
 	}
 
@@ -295,7 +295,7 @@ int warm_start(CPXENVptr env, CPXLPptr lp, int* succ, instance *inst) {
  * @param solution
  * @return
  */
-int benders(CPXENVptr env, CPXLPptr lp, instance *inst, int *succ, int ncomp, tour* solution, int mode) {
+int benders(CPXENVptr env, CPXLPptr lp, instance *inst, int *succ, int ncomp, tour* solution) {
 
 	int iter = 0;
 	double objval = INF_COST;
@@ -316,7 +316,7 @@ int benders(CPXENVptr env, CPXLPptr lp, instance *inst, int *succ, int ncomp, to
 		double residual_time = inst->timelimit - (second() - inst->tstart); // The residual time limit that is left
 		CPXsetdblparam(env, CPX_PARAM_TILIM, residual_time);
 
-		solver(env, lp, inst, xstar, succ, comp, &ncomp, &objval, mode);
+		solver(env, lp, inst, xstar, succ, comp, &ncomp, &objval);
 		
 		if (VERBOSE > 1000) {
 			printf("Iter %4d, Lower Bound: %10.2lf, Number of components: %4d, Time: %5.2lfs\n", iter, objval, ncomp, second()-inst->tstart);
@@ -380,6 +380,51 @@ int benders(CPXENVptr env, CPXLPptr lp, instance *inst, int *succ, int ncomp, to
 }
 
 /**
+ * Post a heuristic solution to CPLEX
+ * @param context
+ * @param inst
+ * @param succ
+ * @param ncomp
+ * @param comp
+ */
+void post_heuristic_solution(CPXCALLBACKCONTEXTptr context, instance *inst, int *succ, int ncomp, int *comp) {
+    if (VERBOSE > 10000) {
+        printf("Posting a heuristic solution\n");
+    }
+
+    tour* heuristic_solution = malloc(sizeof(tour));
+
+    patching_heuristic(succ, ncomp, comp, inst);
+    reconstruct_sol(heuristic_solution, succ, inst);
+    two_opt(heuristic_solution, inst);
+    check_sol(heuristic_solution->path, heuristic_solution->cost, inst);
+
+    int *succ_heuristics = (int *)malloc(inst->nnodes * sizeof(int));
+    from_solution_to_succ(succ_heuristics, heuristic_solution, inst);
+
+    double *xheu = (double *)calloc(inst->ncols, sizeof(double));
+    for (int i = 0; i < inst->nnodes; i++) {
+        xheu[xpos(i, succ_heuristics[i], inst)] = 1.0;
+    }
+
+    int *ind = malloc(inst->ncols * sizeof(int));
+    for (int j = 0; j < inst->ncols; j++) {
+        ind[j] = j;
+    }
+
+    if (CPXcallbackpostheursoln(context, inst->ncols, ind, xheu, heuristic_solution->cost, CPXCALLBACKSOLUTION_NOCHECK)) {
+        print_error("CPXcallbackpostheursoln() error");
+    }
+
+    free(ind);
+    free(succ_heuristics);
+    free(xheu);
+    free(heuristic_solution->path);
+    free(heuristic_solution);
+}
+
+
+/**
  * Callback function for CPLEX to add cuts
  * @param context
  * @param contextid
@@ -411,15 +456,18 @@ static int CPXPUBLIC my_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contexti
 
 		int* index = (int *)malloc(inst->ncols * sizeof(int));
 		double* value = (double *)malloc(inst->ncols * sizeof(double));
+		if (index == NULL || value == NULL) {
+			print_error("Memory allocation error");
+		}
+
 		for (int k = 1; k <= ncomp; k++) {
 			int nnz = 0;
 			double rhs = -1.0;
 
 			char** cname = (char **)calloc(1, sizeof(char *));
 			cname[0] = (char *)calloc(100, sizeof(char));
-
-			if (index == NULL || value == NULL) {
-				print_error("Memory allocation error");
+			if (cname == NULL || cname[0] == NULL) {
+				print_error("Memory allocation error for cname");
 			}
 
 			add_sec(&nnz, &rhs, k, index, value, cname, comp, inst);
@@ -434,6 +482,12 @@ static int CPXPUBLIC my_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contexti
 
 		free(value);
 		free(index);
+
+		// post_heuristic solution
+		if (inst->mode == 2) {
+			post_heuristic_solution(context, inst, succ, ncomp, comp);
+		}
+
 	}
 	free(comp);
 	free(xstar);
@@ -441,7 +495,7 @@ static int CPXPUBLIC my_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contexti
 	return 0;
 }
 
-int branch_and_cut(CPXENVptr env, CPXLPptr lp, CPXLONG contextid, instance *inst, int *succ, int ncomp, tour* solution, int mode) {
+int branch_and_cut(CPXENVptr env, CPXLPptr lp, CPXLONG contextid, instance *inst, int *succ, int ncomp, tour* solution) {
 	
 	double objval = INF_COST;
 	int *comp = (int *)malloc(inst->nnodes * sizeof(int));
@@ -451,7 +505,7 @@ int branch_and_cut(CPXENVptr env, CPXLPptr lp, CPXLONG contextid, instance *inst
 		print_error("CPXcallbacksetfunc() error");
 	}
 
-	solver(env, lp, inst, xstar, succ, comp, &ncomp, &objval, mode);
+	solver(env, lp, inst, xstar, succ, comp, &ncomp, &objval);
 
 	if (VERBOSE > 1000) {
 		printf("Lower Bound: %10.2lf, Number of components: %4d, Time: %5.2lfs\n", objval, ncomp, second()-inst->tstart);
@@ -471,6 +525,34 @@ int branch_and_cut(CPXENVptr env, CPXLPptr lp, CPXLONG contextid, instance *inst
 
 }
 
+void patching_heuristic(int* succ, int ncomp, int* comp, instance* inst) {
+	if (succ == NULL) { print_error("Error occurred while allocating memory for succ\n"); }
+	if (comp == NULL) { print_error("Error occurred while allocating memory for comp\n"); }
+	if (inst == NULL) { print_error("Error occurred while allocating memory for inst\n"); }
+
+	while (ncomp > 1) {
+		int best_i = -1;
+		int best_j = -1;
+		int cross_flag = -1;
+		double best_delta = INF_COST;
+		for (int i = 0; i < inst->nnodes; i++) {
+			for (int j = 0; j < inst->nnodes; j++) {
+				if (i == j) continue;
+
+				if (comp[i] != comp[j]) {
+					update_best_delta(i, j, succ, inst, &best_i, &best_j, &best_delta, &cross_flag);
+				}
+			}
+		}
+		if (cross_flag) {
+			patch_cross_case(succ, comp, &ncomp, best_i, best_j, inst);
+		} else {
+			patch_straight_case(succ, comp, &ncomp, best_i, best_j, inst);
+		}
+	}
+	if (VERBOSE > 2000) { printf("Finished patching heuristic\n"); }
+}
+
 /**
  * Solve the TSP problem using CPLEX
  * @param inst
@@ -478,7 +560,7 @@ int branch_and_cut(CPXENVptr env, CPXLPptr lp, CPXLONG contextid, instance *inst
  * @param mode
  * @return
  */
-int TSPopt(instance *inst, int alg, int mode) {
+int TSPopt(instance *inst, int alg) {
     // Open CPLEX model
     int error = 0;
     CPXENVptr env = CPXopenCPLEX(&error);
@@ -518,20 +600,16 @@ int TSPopt(instance *inst, int alg, int mode) {
 	CPXLONG contextid = CPX_CALLBACKCONTEXT_CANDIDATE;
 
 	if (alg == 6){
-		branch_and_cut(env, lp, contextid, inst, succ, ncomp, solution, mode);
+		branch_and_cut(env, lp, contextid, inst, succ, ncomp, solution);
 	} else {
-		benders(env, lp, inst, succ, ncomp, solution, mode);
+		benders(env, lp, inst, succ, ncomp, solution);
 	}
 	
 	#ifdef DEBUG
 		check_degrees(inst, xstar);	
 	#endif
 
-	/*for (int i = 0; i < inst->nnodes; i++) {
-		succ[solution->path[i]] = solution->path[(i+1) % inst->nnodes];
-	}*/
 	reconstruct_sol(solution, succ, inst);
-	//two_opt(solution, inst);
 	update_best_sol(inst, solution);
 	plot_solution(inst, solution->path);
 
@@ -549,33 +627,4 @@ int TSPopt(instance *inst, int alg, int mode) {
     CPXcloseCPLEX(&env);
 
     return 0;
-}
-
-
-void patching_heuristic(int* succ, int ncomp, int* comp, instance* inst) {
-	if (succ == NULL) { print_error("Error occurred while allocating memory for succ\n"); }
-	if (comp == NULL) { print_error("Error occurred while allocating memory for comp\n"); }
-	if (inst == NULL) { print_error("Error occurred while allocating memory for inst\n"); }
-
-	while (ncomp > 1) {
-		int best_i = -1;
-		int best_j = -1;
-		int cross_flag = -1;
-		double best_delta = INF_COST;
-		for (int i = 0; i < inst->nnodes; i++) {
-			for (int j = 0; j < inst->nnodes; j++) {
-				if (i == j) continue;
-
-				if (comp[i] != comp[j]) {
-					update_best_delta(i, j, succ, inst, &best_i, &best_j, &best_delta, &cross_flag);
-				}
-			}
-		}
-		if (cross_flag) {
-			patch_cross_case(succ, comp, &ncomp, best_i, best_j, inst);
-		} else {
-			patch_straight_case(succ, comp, &ncomp, best_i, best_j, inst);
-		}
-	}
-	if (VERBOSE > 2000) { printf("Finished patching heuristic\n"); }
 }

@@ -120,7 +120,7 @@ void read_input(instance *inst) {
  * @param alg
  * @param mode
  */
-void parse_command_line(int argc, char** argv, instance *inst, parameters *params, int *alg, int* mode) {
+void parse_command_line(int argc, char** argv, instance *inst, parameters *params, int *alg) {
 	
 	if ( VERBOSE >= 100 ) printf("Running %s with %d parameters!\n", argv[0], argc-1);
     
@@ -134,6 +134,7 @@ void parse_command_line(int argc, char** argv, instance *inst, parameters *param
     inst->best_sol->path = NULL;
     inst->best_sol->cost = INF_COST;
     inst->ncols = -1;
+    inst->mode = 0;
 
     params->num_kicks = 3;
     params->interval_tenure = 75;
@@ -142,7 +143,7 @@ void parse_command_line(int argc, char** argv, instance *inst, parameters *param
     int help = 0; if ( argc < 1 ) help = 1;// if no parameters, print help
     int node_flag = 1, number_nodes = 0;
     int alg_choice = -1;
-    int mode_choice = 0; // Warm start flag
+    int mode_choice = 0; // Mode flag
 	for ( int i = 1; i < argc; i++ ) { 
         if ( strcmp(argv[i],"-file") == 0 ) { strcpy(inst->input_file,argv[++i]); node_flag = 0; continue; }
 		if ( strcmp(argv[i],"-input") == 0 ) { strcpy(inst->input_file,argv[++i]); node_flag = 0; continue; }
@@ -183,16 +184,16 @@ void parse_command_line(int argc, char** argv, instance *inst, parameters *param
 
     if (help) {
         printf("\n\nAvailable parameters-------------------------------------------------------------------------\n");
-        printf("-file <filename>       : Input file containing TSP instance\n");
-        printf("-time_limit <value>    : Time limit for the algorithm (in seconds)\n");
-        printf("-seed <value>          : Random seed for reproducibility\n");
-        printf("-nodes <value>         : Number of nodes (if no input file is provided)\n");
-        printf("-alg <algorithm>       : Algorithm choice (1: GREEDY, 2: GREEDY+2OPT, 3: VNS, 4: TABU, 5: GRASP, 6: Branch & Cut, 7: Benders)\n");
-        printf("-num_kicks <value>    : Number of kicks for VNS (default: 3)\n");
+        printf("-file <filename>         : Input file containing TSP instance\n");
+        printf("-time_limit <value>      : Time limit for the algorithm (in seconds)\n");
+        printf("-seed <value>            : Random seed for reproducibility\n");
+        printf("-nodes <value>           : Number of nodes (if no input file is provided)\n");
+        printf("-alg <algorithm>         : Algorithm choice (1: GREEDY, 2: GREEDY+2OPT, 3: VNS, 4: TABU, 5: GRASP, 6: Branch & Cut, 7: Benders)\n");
+        printf("-num_kicks <value>       : Number of kicks for VNS (default: 3)\n");
         printf("-interval_tenure <value> : Interval tenure for Tabu Search (default: 75)\n");
-        printf("-tenure_scaling <value> : Tenure scaling for Tabu Search (default: 0.5)\n");
-        printf("-mode <value>         : Warm start mode (0: no warm start, 1: warm start, default: 0)\n");
-        printf("-help or --help        : Display this help message\n");
+        printf("-tenure_scaling <value>  : Tenure scaling for Tabu Search (default: 0.5)\n");
+        printf("-mode <value>            : Exact solvings optional modes (1: warm start, 2: posting heuristics)\n");
+        printf("-help or --help          : Display this help message\n");
         printf("----------------------------------------------------------------------------------------------\n\n");
         exit(0); 
     }
@@ -212,10 +213,10 @@ void parse_command_line(int argc, char** argv, instance *inst, parameters *param
         printf("Algorithm choice: %d\n", *alg);
     }
 
-    if (mode_choice < 0 || mode_choice > 1) {
+    if (mode_choice < 0 || mode_choice > 2) {
         print_error("Mode choice out of range\n");
     } else {
-        *mode = mode_choice;
+        inst->mode = mode_choice;
     }
 	
 }

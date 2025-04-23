@@ -12,11 +12,10 @@ int main(int argc, char **argv) {
     instance inst;
     parameters params;
     int alg = -1;
-    int mode = 0;
     if ( VERBOSE >= 4000 ) { printf("Instance allocated!\n"); }
     
     // Parse the command line parameters
-    parse_command_line(argc, argv, &inst, &params, &alg, &mode);
+    parse_command_line(argc, argv, &inst, &params, &alg);
     if ( VERBOSE >= 4000 ) { printf("Parse completed!\n"); }
 
     // Read the input file if it is defined otherwise generate random coordinates
@@ -86,13 +85,13 @@ int main(int argc, char **argv) {
             break;
         case 6:
             if (VERBOSE >= 1) { printf("Running Branch and Cut...\n"); }
-            if (TSPopt(&inst, 6, mode)) {
+            if (TSPopt(&inst, 6)) {
                 print_error("Error in TSPopt\n");
             }
             break;
         case 7:
             if (VERBOSE >= 1) { printf("Running Benders...\n"); }
-            if (TSPopt(&inst, 7, mode)) {
+            if (TSPopt(&inst, 7)) {
                 print_error("Error in TSPopt\n");
             }
             break;
