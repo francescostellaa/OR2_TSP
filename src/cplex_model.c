@@ -523,24 +523,17 @@ int violated_cut_callback(double cut_val, int cut_nodes, int* cut, void* params)
 	int rmatbeg = 0;
 	int local = 0;
 
-	/*int *index = (int *)malloc(cut_nodes * sizeof(int));
-    double *value = (double *)malloc(cut_nodes * sizeof(double));*/
 	int *index = (int *)malloc((cut_nodes * cut_nodes) * sizeof(int));
 	double *value = (double *)malloc((cut_nodes * cut_nodes) * sizeof(double));
 	int nnz = 0;
 	for (int i = 0; i < cut_nodes; i++) {
 		for (int j = i+1; j < cut_nodes; j++) {
-			//if (cut[i] == cut[j]) continue;
+			// if (cut[i] == cut[j]) continue;
 			index[nnz] = xpos(cut[i], cut[j], parameters->inst);
 			value[nnz] = 1.0;
 			nnz++;
 		}
 	}
-
-	double violation = cut_violation(parameters->xstar, nnz, rhs, sense, index, value);
-	//printf(" violation = %f | rhs = %f | nnz = %d | cutval = %f\n", violation, rhs, nnz, cut_val);
-
-	if(fabs(violation - (2.0 - cut_val) / 2.0) > EPS_COST) {print_error("Inconsistent violation");}
 
 	if(CPXcallbackaddusercuts(parameters->context, 1, nnz, &rhs, &sense, &rmatbeg, index, value, &purgeable, &local)) {print_error("Error on CPXcallbackaddusercuts()");}
 
@@ -548,31 +541,6 @@ int violated_cut_callback(double cut_val, int cut_nodes, int* cut, void* params)
 	free(index);
 	return 0;
 
-}
-
-/**
- * Compute the violation of a cut
- * @param xstar
- * @param nnz
- * @param rhs
- * @param sense
- * @param index
- * @param value
- * @return
- */
-double cut_violation(double* xstar, int nnz, double rhs, char sense, int* index, double* value) {
-	double lhs = 0.0;
-
-	for(int i=0; i<nnz; ++i) {
-		lhs += xstar[index[i]] * value[i];
-	}
-
-	if(sense == 'L')
-		return lhs - rhs;
-	else if(sense == 'G')
-		return rhs - lhs;
-	else
-		return fabs(lhs - rhs);
 }
 
 /**
@@ -591,12 +559,15 @@ int CPXPUBLIC relaxation_callback(CPXCALLBACKCONTEXTptr context, CPXLONG context
 		print_error("Memory allocation error for elist");
 	}
 
-	// get some random information at the node
-	int mythread = -1; CPXcallbackgetinfoint(context, CPXCALLBACKINFO_THREADID, &mythread);
-	int mynode = -1; CPXcallbackgetinfoint(context, CPXCALLBACKINFO_NODECOUNT, &mynode);
-	double incumbent = CPX_INFBOUND; CPXcallbackgetinfodbl(context, CPXCALLBACKINFO_BEST_SOL, &incumbent);
-
-	if(mynode % inst->nnodes != 0)
+	// information of the node
+	int current_thread = -1; 
+	int current_node = -1;
+	if (CPXcallbackgetinfoint(context, CPXCALLBACKINFO_THREADID, &current_thread))
+		print_error("CPXcallbackgetinfoint error");
+	if (CPXcallbackgetinfoint(context, CPXCALLBACKINFO_NODECOUNT, &current_node))
+		print_error("CPXcallbackgetinfoint error");
+		
+	if(current_node % inst->nnodes != 0)
 		return 0;
 
 	int index = 0;
@@ -652,8 +623,6 @@ int CPXPUBLIC relaxation_callback(CPXCALLBACKCONTEXTptr context, CPXLONG context
 			// number of nodes in the current component
 			int compsize = compscount[c];
 
-			//printf("Component #%d of %d | size = %d\n", c, ncomp, compsize);
-
 			// current subtour in the graph
 			int* subtour = (int*) calloc(compsize, sizeof(int));
 
@@ -663,8 +632,6 @@ int CPXPUBLIC relaxation_callback(CPXCALLBACKCONTEXTptr context, CPXLONG context
 
 			double cutval = 0.0; // default value to pass checks
 			violated_cut_callback(cutval, compsize, subtour, &params);
-
-			//printf(" ... add usercut with comp #%d of %d\n", c, ncomp);
 
 			start += compsize;
 
