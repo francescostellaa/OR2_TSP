@@ -442,7 +442,7 @@ void post_heuristic_solution(CPXCALLBACKCONTEXTptr context, instance *inst, int 
  * @param userhandle
  * @return
  */
-static int CPXPUBLIC candidate_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void *userhandle ) { 
+int CPXPUBLIC candidate_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void *userhandle ) {
 		
 	instance* inst = (instance*) userhandle;
 		
@@ -506,8 +506,15 @@ static int CPXPUBLIC candidate_callback(CPXCALLBACKCONTEXTptr context, CPXLONG c
 	return 0;
 }
 
-static int violated_cut_callback(double cut_val, int cut_nodes, int* cut, void* params) {
-
+/**
+ * Callback function for CPLEX to add usercuts
+ * @param cut_val
+ * @param cut_nodes
+ * @param cut
+ * @param params
+ * @return
+ */
+int violated_cut_callback(double cut_val, int cut_nodes, int* cut, void* params) {
 
 	pass_params* parameters = (pass_params*) params;
 	char sense = 'L';
@@ -531,7 +538,7 @@ static int violated_cut_callback(double cut_val, int cut_nodes, int* cut, void* 
 	}
 
 	double violation = cut_violation(parameters->xstar, nnz, rhs, sense, index, value);
-	printf(" violation = %f | rhs = %f | nnz = %d | cutval = %f\n", violation, rhs, nnz, cut_val);
+	//printf(" violation = %f | rhs = %f | nnz = %d | cutval = %f\n", violation, rhs, nnz, cut_val);
 
 	if(fabs(violation - (2.0 - cut_val) / 2.0) > EPS_COST) {print_error("Inconsistent violation");}
 
@@ -543,6 +550,16 @@ static int violated_cut_callback(double cut_val, int cut_nodes, int* cut, void* 
 
 }
 
+/**
+ * Compute the violation of a cut
+ * @param xstar
+ * @param nnz
+ * @param rhs
+ * @param sense
+ * @param index
+ * @param value
+ * @return
+ */
 double cut_violation(double* xstar, int nnz, double rhs, char sense, int* index, double* value) {
 	double lhs = 0.0;
 
@@ -558,7 +575,14 @@ double cut_violation(double* xstar, int nnz, double rhs, char sense, int* index,
 		return fabs(lhs - rhs);
 }
 
-static int CPXPUBLIC relaxation_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void *userhandle ) { 
+/**
+ * Callback function for CPLEX to add cuts
+ * @param context
+ * @param contextid
+ * @param userhandle
+ * @return
+ */
+int CPXPUBLIC relaxation_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void *userhandle ) {
 	instance* inst = (instance*) userhandle;
 
 	int ecount = 0;
@@ -566,6 +590,14 @@ static int CPXPUBLIC relaxation_callback(CPXCALLBACKCONTEXTptr context, CPXLONG 
 	if (elist == NULL) {
 		print_error("Memory allocation error for elist");
 	}
+
+	// get some random information at the node
+	int mythread = -1; CPXcallbackgetinfoint(context, CPXCALLBACKINFO_THREADID, &mythread);
+	int mynode = -1; CPXcallbackgetinfoint(context, CPXCALLBACKINFO_NODECOUNT, &mynode);
+	double incumbent = CPX_INFBOUND; CPXcallbackgetinfodbl(context, CPXCALLBACKINFO_BEST_SOL, &incumbent);
+
+	if(mynode % inst->nnodes != 0)
+		return 0;
 
 	int index = 0;
 	for (int i = 0; i < inst->nnodes; i++) {
@@ -592,10 +624,10 @@ static int CPXPUBLIC relaxation_callback(CPXCALLBACKCONTEXTptr context, CPXLONG 
 		print_error("Memory allocation error for compscount or comps");
 	}
 
+	// RETURNS the connected components of the graph given by the edgeset
 	if (CCcut_connect_components(inst->nnodes, ecount, elist, xstar, &ncomp, &compscount, &comps)) {
 		print_error("CCcut_connect_components error");
 	}
-
 
 	double cutoff = 1.9;
 	pass_params params = {
@@ -627,13 +659,12 @@ static int CPXPUBLIC relaxation_callback(CPXCALLBACKCONTEXTptr context, CPXLONG 
 
 			for(int i=0; i<compsize; ++i) {
 				subtour[i] = comps[i+start];
-				//printf("subtour[%d] = %d\n", i, subtour[i]);
 			}
 
 			double cutval = 0.0; // default value to pass checks
 			violated_cut_callback(cutval, compsize, subtour, &params);
 
-			printf(" ... add usercut with comp #%d of %d\n", c, ncomp);
+			//printf(" ... add usercut with comp #%d of %d\n", c, ncomp);
 
 			start += compsize;
 
@@ -649,20 +680,46 @@ static int CPXPUBLIC relaxation_callback(CPXCALLBACKCONTEXTptr context, CPXLONG 
 	return 0;
 }
 
+/**
+ * Callback function for CPLEX to add cuts
+ * @param context
+ * @param contextid
+ * @param userhandle
+ * @return
+ */
+int CPXPUBLIC sec_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void* userhandle) {
+	instance* inst = (instance*) userhandle;
+
+	if(contextid == CPX_CALLBACKCONTEXT_CANDIDATE) {
+		return candidate_callback(context, contextid, inst);
+	}
+	if(contextid == CPX_CALLBACKCONTEXT_RELAXATION) {
+		return relaxation_callback(context, contextid, inst);
+	}
+
+	print_error("contextid unknown in callback");
+	return 1;
+}
+
+/**
+ * Branch and cut function
+ * @param env
+ * @param lp
+ * @param contextid
+ * @param inst
+ * @param succ
+ * @param ncomp
+ * @param solution
+ * @return
+ */
 int branch_and_cut(CPXENVptr env, CPXLPptr lp, CPXLONG contextid, instance *inst, int *succ, int ncomp, tour* solution) {
 	double objval = INF_COST;
 	int *comp = (int *)malloc(inst->nnodes * sizeof(int));
 	double *xstar = (double*)malloc(inst->ncols * sizeof(double));
 
-	if (inst->mode == 3) {
-		if ( CPXcallbacksetfunc(env, lp, CPX_CALLBACKCONTEXT_RELAXATION, relaxation_callback, inst) ) {
-			print_error("CPXcallbacksetfunc() error");
-		}
-	} else {
-		if ( CPXcallbacksetfunc(env, lp, CPX_CALLBACKCONTEXT_CANDIDATE, candidate_callback, inst) ) {
-			print_error("CPXcallbacksetfunc() error");
-		}
-	}
+	if(CPXcallbacksetfunc(env, lp, contextid, sec_callback, inst))
+		print_error("CPXcallbacksetfunc() error");
+
 
 
 	solver(env, lp, inst, xstar, succ, comp, &ncomp, &objval);
@@ -687,6 +744,13 @@ int branch_and_cut(CPXENVptr env, CPXLPptr lp, CPXLONG contextid, instance *inst
 
 }
 
+/**
+ * Function to implement the patching heuristic to a solution
+ * @param succ
+ * @param ncomp
+ * @param comp
+ * @param inst
+ */
 void patching_heuristic(int* succ, int ncomp, int* comp, instance* inst) {
 	if (succ == NULL) { print_error("Error occurred while allocating memory for succ\n"); }
 	if (comp == NULL) { print_error("Error occurred while allocating memory for comp\n"); }
@@ -761,7 +825,7 @@ int TSPopt(instance *inst, int alg) {
 	tour* solution = (tour *)malloc(sizeof(tour));
 	CPXLONG contextid = -1000;
 	if (inst->mode == 3) {
-		contextid = CPX_CALLBACKCONTEXT_RELAXATION;
+		contextid = CPX_CALLBACKCONTEXT_CANDIDATE | CPX_CALLBACKCONTEXT_RELAXATION;
 	} else{
 		contextid = CPX_CALLBACKCONTEXT_CANDIDATE;
 	}
