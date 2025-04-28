@@ -516,25 +516,46 @@ static int violated_cut_callback(double cut_val, int cut_nodes, int* cut, void* 
 	int rmatbeg = 0;
 	int local = 0;
 
-	int *index = (int *)malloc(cut_nodes * sizeof(int));
-    double *value = (double *)malloc(cut_nodes * sizeof(double));
+	/*int *index = (int *)malloc(cut_nodes * sizeof(int));
+    double *value = (double *)malloc(cut_nodes * sizeof(double));*/
+	int *index = (int *)malloc((cut_nodes * cut_nodes) * sizeof(int));
+	double *value = (double *)malloc((cut_nodes * cut_nodes) * sizeof(double));
 	int nnz = 0;
 	for (int i = 0; i < cut_nodes; i++) {
 		for (int j = i+1; j < cut_nodes; j++) {
-			if (cut[i] == cut[j]) continue;
+			//if (cut[i] == cut[j]) continue;
 			index[nnz] = xpos(cut[i], cut[j], parameters->inst);
 			value[nnz] = 1.0;
 			nnz++;
 		}
 	}
 
-	if(CPXcallbackaddusercuts(parameters->context, 1, nnz, &rhs, &sense, &rmatbeg, index, value, &purgeable, &local))
-        print_error("Error on CPXcallbackaddusercuts()");
+	double violation = cut_violation(parameters->xstar, nnz, rhs, sense, index, value);
+	printf(" violation = %f | rhs = %f | nnz = %d | cutval = %f\n", violation, rhs, nnz, cut_val);
+
+	if(fabs(violation - (2.0 - cut_val) / 2.0) > EPS_COST) {print_error("Inconsistent violation");}
+
+	if(CPXcallbackaddusercuts(parameters->context, 1, nnz, &rhs, &sense, &rmatbeg, index, value, &purgeable, &local)) {print_error("Error on CPXcallbackaddusercuts()");}
 
 	free(value);
 	free(index);
 	return 0;
 
+}
+
+double cut_violation(double* xstar, int nnz, double rhs, char sense, int* index, double* value) {
+	double lhs = 0.0;
+
+	for(int i=0; i<nnz; ++i) {
+		lhs += xstar[index[i]] * value[i];
+	}
+
+	if(sense == 'L')
+		return lhs - rhs;
+	else if(sense == 'G')
+		return rhs - lhs;
+	else
+		return fabs(lhs - rhs);
 }
 
 static int CPXPUBLIC relaxation_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void *userhandle ) { 
@@ -575,6 +596,7 @@ static int CPXPUBLIC relaxation_callback(CPXCALLBACKCONTEXTptr context, CPXLONG 
 		print_error("CCcut_connect_components error");
 	}
 
+
 	double cutoff = 1.9;
 	pass_params params = {
 		.context = context,
@@ -582,10 +604,41 @@ static int CPXPUBLIC relaxation_callback(CPXCALLBACKCONTEXTptr context, CPXLONG 
 		.elist = elist,
 		.comp = comps,
 		.ncomp = ncomp,
-		.inst = inst
+		.inst = inst,
+		.xstar = xstar
 	};
-	if (CCcut_violated_cuts(inst->nnodes, ecount, elist, xstar, cutoff, violated_cut_callback, &params)) {
-		print_error("CCcut_violated_cuts error");
+
+	if (ncomp == 1) {
+		if (CCcut_violated_cuts(inst->nnodes, ecount, elist, xstar, cutoff, violated_cut_callback, &params)) {
+			print_error("CCcut_violated_cuts error");
+		}
+	} else if (ncomp > 1) {
+		int start = 0;
+
+		// add sec for each components
+		for(int c=0; c<ncomp; ++c) {
+			// number of nodes in the current component
+			int compsize = compscount[c];
+
+			//printf("Component #%d of %d | size = %d\n", c, ncomp, compsize);
+
+			// current subtour in the graph
+			int* subtour = (int*) calloc(compsize, sizeof(int));
+
+			for(int i=0; i<compsize; ++i) {
+				subtour[i] = comps[i+start];
+				//printf("subtour[%d] = %d\n", i, subtour[i]);
+			}
+
+			double cutval = 0.0; // default value to pass checks
+			violated_cut_callback(cutval, compsize, subtour, &params);
+
+			printf(" ... add usercut with comp #%d of %d\n", c, ncomp);
+
+			start += compsize;
+
+			free(subtour);
+		}
 	}
 
 	free(comps);
@@ -602,14 +655,15 @@ int branch_and_cut(CPXENVptr env, CPXLPptr lp, CPXLONG contextid, instance *inst
 	double *xstar = (double*)malloc(inst->ncols * sizeof(double));
 
 	if (inst->mode == 3) {
-		if ( CPXcallbacksetfunc(env, lp, contextid, relaxation_callback, inst) ) {
+		if ( CPXcallbacksetfunc(env, lp, CPX_CALLBACKCONTEXT_RELAXATION, relaxation_callback, inst) ) {
 			print_error("CPXcallbacksetfunc() error");
 		}
 	} else {
-		if ( CPXcallbacksetfunc(env, lp, contextid, candidate_callback, inst) ) {
+		if ( CPXcallbacksetfunc(env, lp, CPX_CALLBACKCONTEXT_CANDIDATE, candidate_callback, inst) ) {
 			print_error("CPXcallbacksetfunc() error");
 		}
 	}
+
 
 	solver(env, lp, inst, xstar, succ, comp, &ncomp, &objval);
 
@@ -619,10 +673,12 @@ int branch_and_cut(CPXENVptr env, CPXLPptr lp, CPXLONG contextid, instance *inst
 	}
 
 	if (ncomp >= 2) {
+		printf("HERE\n");
 		patching_heuristic(succ, ncomp, comp, inst);
 		reconstruct_sol(solution, succ, inst);
 		two_opt(solution, inst);
 		check_sol(solution->path, solution->cost, inst);
+		printf("Solution cost %lf\n", solution->cost);
 	}
 
 	free(comp);

@@ -14,6 +14,7 @@ typedef struct {
     int* comp;
     int ncomp;   
     instance* inst;
+    double* xstar;
 } pass_params;
 
 int TSPopt(instance *inst, int alg);
@@ -26,6 +27,7 @@ void plot_cost_benders(const char *input_file, const char *output_file);
 void post_heuristic_solution(CPXCALLBACKCONTEXTptr context, instance *inst, int *succ, int ncomp, int *comp, double objval);
 void patching_heuristic(int *succ, int ncomp, int *comp, instance *inst);
 int warm_start(CPXENVptr env, CPXLPptr lp, int* succ, instance *inst);
+double cut_violation(double* xstar, int nnz, double rhs, char sense, int* index, double* value);
 int benders(CPXENVptr env, CPXLPptr lp, instance *inst, int *succ, int ncomp, tour* solution);
 int branch_and_cut(CPXENVptr env, CPXLPptr lp, CPXLONG contextid, instance *inst, int *succ, int ncomp, tour* solution);
 static int CPXPUBLIC candidate_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void *userhandle);
