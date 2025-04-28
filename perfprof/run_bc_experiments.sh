@@ -3,9 +3,9 @@
 # Configurations
 BUILD_DIR="../build"  
 EXECUTABLE="$BUILD_DIR/tsp"
-TIME_LIMIT=120 # seconds
+TIME_LIMIT=60 # seconds
 SEED=50
-NODES=500
+NODES=200
 NUM_INSTANCES=10
 OUTPUT_FILE="results_bc.csv"
 

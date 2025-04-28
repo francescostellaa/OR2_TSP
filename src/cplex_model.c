@@ -263,15 +263,18 @@ int warm_start(CPXENVptr env, CPXLPptr lp, int* succ, instance *inst) {
 	solution->cost = INF_COST;
 
 	greedy(0, solution, 1, inst);
-	vns(inst, solution, inst->timelimit * 0.01, 3);
-
+	//vns(inst, solution, inst->timelimit * 0.01, 3);
+	if (VERBOSE > 1000) {
+		printf("Initial solution cost: %lf\n found after %5.2lf second\n", solution->cost, second() - inst->tstart);
+		fflush(NULL);
+	}
 	from_solution_to_succ(succ, solution, inst);
 
 	double *xheu = calloc(inst->ncols, sizeof(double));  // all zeros, initially
-
 	for ( int i = 0; i < inst->nnodes; i++ ) xheu[xpos(i,succ[i],inst)] = 1.0;
 	int *ind = malloc(inst->ncols * sizeof(int));
 	for ( int j = 0; j < inst->ncols; j++ ) ind[j] = j;
+
 	int effortlevel = CPX_MIPSTART_NOCHECK;
 	int beg = 0;
 	if ( CPXaddmipstarts(env, lp, 1, inst->ncols, &beg, ind, xheu, &effortlevel, NULL)) {
@@ -387,7 +390,7 @@ int benders(CPXENVptr env, CPXLPptr lp, instance *inst, int *succ, int ncomp, to
  * @param ncomp
  * @param comp
  */
-void post_heuristic_solution(CPXCALLBACKCONTEXTptr context, instance *inst, int *succ, int ncomp, int *comp) {
+void post_heuristic_solution(CPXCALLBACKCONTEXTptr context, instance *inst, int *succ, int ncomp, int *comp, double objval) {
     if (VERBOSE > 10000) {
         printf("Posting a heuristic solution\n");
     }
@@ -397,28 +400,36 @@ void post_heuristic_solution(CPXCALLBACKCONTEXTptr context, instance *inst, int 
     patching_heuristic(succ, ncomp, comp, inst);
     reconstruct_sol(heuristic_solution, succ, inst);
     two_opt(heuristic_solution, inst);
-    check_sol(heuristic_solution->path, heuristic_solution->cost, inst);
 
-    int *succ_heuristics = (int *)malloc(inst->nnodes * sizeof(int));
-    from_solution_to_succ(succ_heuristics, heuristic_solution, inst);
+	if (heuristic_solution->cost < objval) {
+		check_sol(heuristic_solution->path, heuristic_solution->cost, inst);
+		
+		int *succ_heuristics = (int *)malloc(inst->nnodes * sizeof(int));
+		from_solution_to_succ(succ_heuristics, heuristic_solution, inst);
 
-    double *xheu = (double *)calloc(inst->ncols, sizeof(double));
-    for (int i = 0; i < inst->nnodes; i++) {
-        xheu[xpos(i, succ_heuristics[i], inst)] = 1.0;
-    }
+		double *xheu = (double *)calloc(inst->ncols, sizeof(double));
+		for (int i = 0; i < inst->nnodes; i++) {
+			xheu[xpos(i, succ_heuristics[i], inst)] = 1.0;
+		}
 
-    int *ind = malloc(inst->ncols * sizeof(int));
-    for (int j = 0; j < inst->ncols; j++) {
-        ind[j] = j;
-    }
+		int *ind = malloc(inst->ncols * sizeof(int));
+		for (int j = 0; j < inst->ncols; j++) {
+			ind[j] = j;
+		}
 
-    if (CPXcallbackpostheursoln(context, inst->ncols, ind, xheu, heuristic_solution->cost, CPXCALLBACKSOLUTION_NOCHECK)) {
-        print_error("CPXcallbackpostheursoln() error");
-    }
+		if (CPXcallbackpostheursoln(context, inst->ncols, ind, xheu, heuristic_solution->cost, CPXCALLBACKSOLUTION_NOCHECK)) {
+			print_error("CPXcallbackpostheursoln() error");
+		}
 
-    free(ind);
-    free(succ_heuristics);
-    free(xheu);
+		if (VERBOSE > 10000) {
+			printf("Posted heuristic solution cost: %lf\n", heuristic_solution->cost);
+			fflush(NULL);
+		}
+
+		free(ind);
+		free(succ_heuristics);
+		free(xheu);
+	}
     free(heuristic_solution->path);
     free(heuristic_solution);
 }
@@ -485,7 +496,7 @@ static int CPXPUBLIC my_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contexti
 
 		// post_heuristic solution
 		if (inst->mode == 2) {
-			post_heuristic_solution(context, inst, succ, ncomp, comp);
+			post_heuristic_solution(context, inst, succ, ncomp, comp, objval);
 		}
 
 	}
