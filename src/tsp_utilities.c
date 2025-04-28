@@ -213,7 +213,7 @@ void parse_command_line(int argc, char** argv, instance *inst, parameters *param
         printf("Algorithm choice: %d\n", *alg);
     }
 
-    if (mode_choice < 0 || mode_choice > 2) {
+    if (mode_choice < 0 || mode_choice > 3) {
         print_error("Mode choice out of range\n");
     } else {
         inst->mode = mode_choice;

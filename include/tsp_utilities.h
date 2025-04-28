@@ -55,16 +55,6 @@ typedef struct {
 
 } instance;
 
-// Algorithm choice
-// 1: Greedy
-// 2: Greedy + 2-OPT
-// 3: VNS
-// 4: Tabu Search
-// 5: GRASP
-// 6: Brand and Cut
-// 7: Benders
-// extern int alg;
-
 /*
  * Parameters for the algorithms
  */

@@ -403,7 +403,7 @@ void post_heuristic_solution(CPXCALLBACKCONTEXTptr context, instance *inst, int 
 
 	if (heuristic_solution->cost < objval) {
 		check_sol(heuristic_solution->path, heuristic_solution->cost, inst);
-		
+
 		int *succ_heuristics = (int *)malloc(inst->nnodes * sizeof(int));
 		from_solution_to_succ(succ_heuristics, heuristic_solution, inst);
 
@@ -442,7 +442,7 @@ void post_heuristic_solution(CPXCALLBACKCONTEXTptr context, instance *inst, int 
  * @param userhandle
  * @return
  */
-static int CPXPUBLIC my_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void *userhandle ) { 
+static int CPXPUBLIC candidate_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void *userhandle ) { 
 		
 	instance* inst = (instance*) userhandle;
 		
@@ -506,14 +506,109 @@ static int CPXPUBLIC my_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contexti
 	return 0;
 }
 
+static int violated_cut_callback(double cut_val, int cut_nodes, int* cut, void* params) {
+
+
+	pass_params* parameters = (pass_params*) params;
+	char sense = 'L';
+	double rhs = (double)cut_nodes - 1.0;
+	int purgeable = CPX_USECUT_FILTER;
+	int rmatbeg = 0;
+	int local = 0;
+
+	int *index = (int *)malloc(cut_nodes * sizeof(int));
+    double *value = (double *)malloc(cut_nodes * sizeof(double));
+	int nnz = 0;
+	for (int i = 0; i < cut_nodes; i++) {
+		for (int j = i+1; j < cut_nodes; j++) {
+			if (cut[i] == cut[j]) continue;
+			index[nnz] = xpos(cut[i], cut[j], parameters->inst);
+			value[nnz] = 1.0;
+			nnz++;
+		}
+	}
+
+	if(CPXcallbackaddusercuts(parameters->context, 1, nnz, &rhs, &sense, &rmatbeg, index, value, &purgeable, &local))
+        print_error("Error on CPXcallbackaddusercuts()");
+
+	free(value);
+	free(index);
+	return 0;
+
+}
+
+static int CPXPUBLIC relaxation_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void *userhandle ) { 
+	instance* inst = (instance*) userhandle;
+
+	int ecount = 0;
+	int* elist = (int*)malloc((inst->ncols * 2) * sizeof(int));
+	if (elist == NULL) {
+		print_error("Memory allocation error for elist");
+	}
+
+	int index = 0;
+	for (int i = 0; i < inst->nnodes; i++) {
+		for (int j = i+1; j < inst->nnodes; j++) {
+			elist[index++] = i;
+			elist[index++] = j;
+			ecount++;
+		}
+	}
+
+	double* xstar = (double*) malloc(inst->ncols * sizeof(double));
+	if (xstar == NULL) {
+		print_error("Memory allocation error for xstar");
+	}
+	double objval = CPX_INFBOUND;
+	if ( CPXcallbackgetrelaxationpoint(context, xstar, 0, inst->ncols-1, &objval) ){
+		print_error("CPXcallbackgetcandidatepoint error");
+	}
+
+	int ncomp;
+	int *compscount = (int *)malloc(inst->nnodes * sizeof(int));
+	int* comps = (int *)malloc(inst->nnodes * sizeof(int));
+	if (compscount == NULL || comps == NULL) {
+		print_error("Memory allocation error for compscount or comps");
+	}
+
+	if (CCcut_connect_components(inst->nnodes, ecount, elist, xstar, &ncomp, &compscount, &comps)) {
+		print_error("CCcut_connect_components error");
+	}
+
+	double cutoff = 1.9;
+	pass_params params = {
+		.context = context,
+		.ecount = ecount,
+		.elist = elist,
+		.comp = comps,
+		.ncomp = ncomp,
+		.inst = inst
+	};
+	if (CCcut_violated_cuts(inst->nnodes, ecount, elist, xstar, cutoff, violated_cut_callback, &params)) {
+		print_error("CCcut_violated_cuts error");
+	}
+
+	free(comps);
+	free(compscount);
+	free(xstar);
+	free(elist);
+
+	return 0;
+}
+
 int branch_and_cut(CPXENVptr env, CPXLPptr lp, CPXLONG contextid, instance *inst, int *succ, int ncomp, tour* solution) {
-	
 	double objval = INF_COST;
 	int *comp = (int *)malloc(inst->nnodes * sizeof(int));
 	double *xstar = (double*)malloc(inst->ncols * sizeof(double));
 
-	if ( CPXcallbacksetfunc(env, lp, contextid, my_callback, inst) ) {
-		print_error("CPXcallbacksetfunc() error");
+	if (inst->mode == 3) {
+		if ( CPXcallbacksetfunc(env, lp, contextid, relaxation_callback, inst) ) {
+			print_error("CPXcallbacksetfunc() error");
+		}
+	} else {
+		if ( CPXcallbacksetfunc(env, lp, contextid, candidate_callback, inst) ) {
+			print_error("CPXcallbacksetfunc() error");
+		}
 	}
 
 	solver(env, lp, inst, xstar, succ, comp, &ncomp, &objval);
@@ -608,7 +703,12 @@ int TSPopt(instance *inst, int alg) {
 	// CPLEX is not able to solve the problem to the optimality
 	int two_opt_flag = 0;
 	tour* solution = (tour *)malloc(sizeof(tour));
-	CPXLONG contextid = CPX_CALLBACKCONTEXT_CANDIDATE;
+	CPXLONG contextid = -1000;
+	if (inst->mode == 3) {
+		contextid = CPX_CALLBACKCONTEXT_RELAXATION;
+	} else{
+		contextid = CPX_CALLBACKCONTEXT_CANDIDATE;
+	}
 
 	if (alg == 6){
 		branch_and_cut(env, lp, contextid, inst, succ, ncomp, solution);

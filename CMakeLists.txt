@@ -37,6 +37,7 @@ add_executable(tsp
     src/tabu.c
     src/cplex_model.c
     src/cplex_utilities.c
+    src/mincut.c
 )
 
 # target_link_libraries( ${PROJECT_NAME} ${OpenCV_LIBS} ${Boost_FILESYSTEM_LIBRARY})
