@@ -3,6 +3,28 @@
 
 //#define DEBUG    // da commentare se non si vuole il debugging
 
+#include <stdio.h>
+#include <termios.h>
+#include <unistd.h>
+
+void press_a_key() {
+	struct termios oldt, newt;
+
+	// Get the current terminal settings
+	tcgetattr(STDIN_FILENO, &oldt);
+	newt = oldt;
+
+	// Disable canonical mode and echo
+	newt.c_lflag &= ~(ICANON | ECHO);
+	tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+
+	printf("Press any key to continue...\n");
+	getchar(); // Wait for a key press
+
+	// Restore the original terminal settings
+	tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+}
+
 /**
  * Build the solution from the output of cplex model
  * @param xstar
@@ -233,10 +255,6 @@ void solver(CPXENVptr env, CPXLPptr lp, instance *inst, double *xstar, int *succ
     }
 
     int solstat = CPXgetstat(env, lp);
-    /*if (solstat != CPXMIP_OPTIMAL && solstat != CPXMIP_OPTIMAL_TOL && solstat != CPXMIP_FEASIBLE) {
-        printf("CPLEX Error: No feasible solution found for the given time limit.\nStatus: %d\n", solstat);
-        exit(1); // Exit the loop or handle the error
-    }*/
 
     if (CPXgetx(env, lp, xstar, 0, inst->ncols - 1)) {
         print_error("CPXgetx() error");
@@ -396,12 +414,22 @@ void post_heuristic_solution(CPXCALLBACKCONTEXTptr context, instance *inst, int 
     }
 
     tour* heuristic_solution = malloc(sizeof(tour));
-
+	//double time = second();
+	//double patching_time = INF_COST;
     patching_heuristic(succ, ncomp, comp, inst);
-    reconstruct_sol(heuristic_solution, succ, inst);
-    two_opt(heuristic_solution, inst);
+	//patching_time = second() - time;
 
+	//double two_opt_time = INF_COST;
+    reconstruct_sol(heuristic_solution, succ, inst);
+	//time = second();
+    two_opt(heuristic_solution, inst);
+	//two_opt_time = second() - time;
+	/*printf("Time for patching heuristic: %lf\n", patching_time);
+	printf("Time for 2-opt: %lf\n", two_opt_time);*/
 	if (heuristic_solution->cost < objval) {
+		/*double time_for_posting = INF_COST;
+		time = second();*/
+
 		check_sol(heuristic_solution->path, heuristic_solution->cost, inst);
 
 		int *succ_heuristics = (int *)malloc(inst->nnodes * sizeof(int));
@@ -429,6 +457,8 @@ void post_heuristic_solution(CPXCALLBACKCONTEXTptr context, instance *inst, int 
 		free(ind);
 		free(succ_heuristics);
 		free(xheu);
+		//time_for_posting = second() - time;
+		//printf("Time for posting heuristic solution: %lf\n", time_for_posting);
 	}
     free(heuristic_solution->path);
     free(heuristic_solution);
@@ -443,7 +473,7 @@ void post_heuristic_solution(CPXCALLBACKCONTEXTptr context, instance *inst, int 
  * @return
  */
 int CPXPUBLIC candidate_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void *userhandle ) {
-		
+
 	instance* inst = (instance*) userhandle;
 		
 	char sense = 'L';
@@ -535,12 +565,40 @@ int violated_cut_callback(double cut_val, int cut_nodes, int* cut, void* params)
 		}
 	}
 
+
+
+
+	/*double violation = cut_violation(nnz, rhs, sense, index, value, parameters->xstar);
+	double expected_violation = (2.0-cut_val)/2.0;
+	//printf("Generated a violated cut: violation %lf, expected violation %lf\n", violation, expected_violation);//press_a_key();
+	printf(" violation = %f | rhs = %f | nnz = %d | cut_val = %f\n", violation, rhs, nnz, cut_val);
+	if (fabs(violation - expected_violation) > EPS_COST) {
+
+		print_error("Cut not violated\n");
+	}*/
+
 	if(CPXcallbackaddusercuts(parameters->context, 1, nnz, &rhs, &sense, &rmatbeg, index, value, &purgeable, &local)) {print_error("Error on CPXcallbackaddusercuts()");}
 
 	free(value);
 	free(index);
 	return 0;
 
+}
+
+double cut_violation(int nnz, double rhs, char sense, int* index, double* value, double* xstar) {
+	double cut_val = 0.0;
+	for (int i = 0; i < nnz; i++) {
+		cut_val += value[i] * xstar[index[i]];
+	}
+
+	if (sense == 'L') {
+		return fmax(0.0, cut_val - rhs);
+	} else if (sense == 'G') {
+		return fmax(0.0, rhs - cut_val);
+	} else {
+		return fabs(rhs - cut_val);
+	}
+	return 0;
 }
 
 /**
@@ -558,7 +616,6 @@ int CPXPUBLIC relaxation_callback(CPXCALLBACKCONTEXTptr context, CPXLONG context
 	if (elist == NULL) {
 		print_error("Memory allocation error for elist");
 	}
-
 	// information of the node
 	int current_thread = -1; 
 	int current_node = -1;
@@ -567,8 +624,8 @@ int CPXPUBLIC relaxation_callback(CPXCALLBACKCONTEXTptr context, CPXLONG context
 	if (CPXcallbackgetinfoint(context, CPXCALLBACKINFO_NODECOUNT, &current_node))
 		print_error("CPXcallbackgetinfoint error");
 		
-	if(current_node % inst->nnodes != 0)
-		return 0;
+	/*if(current_node % inst->nnodes != 0)
+		return 0;*/
 
 	int index = 0;
 	for (int i = 0; i < inst->nnodes; i++) {
@@ -600,7 +657,7 @@ int CPXPUBLIC relaxation_callback(CPXCALLBACKCONTEXTptr context, CPXLONG context
 		print_error("CCcut_connect_components error");
 	}
 
-	double cutoff = 1.9;
+	double cutoff = 1.9; // require a violation of at least 0.1 in the sec in the cut form
 	pass_params params = {
 		.context = context,
 		.ecount = ecount,
@@ -609,13 +666,14 @@ int CPXPUBLIC relaxation_callback(CPXCALLBACKCONTEXTptr context, CPXLONG context
 		.ncomp = ncomp,
 		.inst = inst,
 		.xstar = xstar
+		//.cut_violation = 0
 	};
 
 	if (ncomp == 1) {
 		if (CCcut_violated_cuts(inst->nnodes, ecount, elist, xstar, cutoff, violated_cut_callback, &params)) {
 			print_error("CCcut_violated_cuts error");
 		}
-	} else if (ncomp > 1) {
+	} else {
 		int start = 0;
 
 		// add sec for each components
@@ -687,8 +745,6 @@ int branch_and_cut(CPXENVptr env, CPXLPptr lp, CPXLONG contextid, instance *inst
 	if(CPXcallbacksetfunc(env, lp, contextid, sec_callback, inst))
 		print_error("CPXcallbacksetfunc() error");
 
-
-
 	solver(env, lp, inst, xstar, succ, comp, &ncomp, &objval);
 
 	if (VERBOSE > 1000) {
@@ -697,7 +753,6 @@ int branch_and_cut(CPXENVptr env, CPXLPptr lp, CPXLONG contextid, instance *inst
 	}
 
 	if (ncomp >= 2) {
-		printf("HERE\n");
 		patching_heuristic(succ, ncomp, comp, inst);
 		reconstruct_sol(solution, succ, inst);
 		two_opt(solution, inst);

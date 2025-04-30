@@ -27,12 +27,12 @@ void plot_cost_benders(const char *input_file, const char *output_file);
 void post_heuristic_solution(CPXCALLBACKCONTEXTptr context, instance *inst, int *succ, int ncomp, int *comp, double objval);
 void patching_heuristic(int *succ, int ncomp, int *comp, instance *inst);
 int warm_start(CPXENVptr env, CPXLPptr lp, int* succ, instance *inst);
-double cut_violation(double* xstar, int nnz, double rhs, char sense, int* index, double* value);
 int benders(CPXENVptr env, CPXLPptr lp, instance *inst, int *succ, int ncomp, tour* solution);
 int branch_and_cut(CPXENVptr env, CPXLPptr lp, CPXLONG contextid, instance *inst, int *succ, int ncomp, tour* solution);
 int CPXPUBLIC candidate_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void *userhandle);
 void solver(CPXENVptr env, CPXLPptr lp, instance *inst, double *xstar, int *succ, int *comp, int *ncomp, double *objval);
 int CPXPUBLIC sec_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void* userhandle);
 int violated_cut_callback(double cut_val, int cut_nodes, int* cut, void* params);
+double cut_violation(int nnz, double rhs, char sense, int* index, double* value, double* xstar);
 
 #endif //CPLEX_MODEL_H
