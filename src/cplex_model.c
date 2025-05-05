@@ -246,7 +246,7 @@ void add_sec(int* nnz, double* rhs, int comp_index, int* index, double* value, c
  */
 void solver(CPXENVptr env, CPXLPptr lp, instance *inst, double *xstar, int *succ, int *comp, int *ncomp, double *objval) {
 
-	if (inst->mode == 1 || inst->mode == 2) {
+	if (inst->mode == 1 || inst->mode == 4) {
 		warm_start(env, lp, succ, inst);
 	}
 
@@ -377,6 +377,7 @@ int benders(CPXENVptr env, CPXLPptr lp, instance *inst, int *succ, int ncomp, to
 		if (ncomp >= 2) {
 			patching_heuristic(succ, ncomp, comp, inst);
 			reconstruct_sol(solution, succ, inst);
+			plot_solution(inst, solution->path);
 			if (VERBOSE > 1000) { printf("Solution cost before 2-Opt: %lf\n", solution->cost); }
 			two_opt(solution, inst);
 			check_sol(solution->path, solution->cost, inst);
@@ -408,33 +409,21 @@ int benders(CPXENVptr env, CPXLPptr lp, instance *inst, int *succ, int ncomp, to
  * @param ncomp
  * @param comp
  */
-void post_heuristic_solution(CPXCALLBACKCONTEXTptr context, instance *inst, int *succ, int ncomp, int *comp, double objval) {
+void post_heuristic_solution(CPXCALLBACKCONTEXTptr context, instance *inst, int *succ, int ncomp, int *comp, double incumbent) {
     if (VERBOSE > 10000) {
         printf("Posting a heuristic solution\n");
     }
 
-    tour* heuristic_solution = malloc(sizeof(tour));
-	double time = second();
-	double patching_time = INF_COST;
-    //patching_heuristic(succ, ncomp, comp, inst);
+    patching_heuristic(succ, ncomp, comp, inst);
 
-	//patch_solution(xstar, inst);
-	patching_time = second() - time;
-	double two_opt_time = INF_COST;
-	time = second();
+	tour* heuristic_solution = malloc(sizeof(tour));
     reconstruct_sol(heuristic_solution, succ, inst);
-
+	// plot_solution(inst,heuristic_solution->path);
     two_opt(heuristic_solution, inst);
-	two_opt_time = second() - time;
-	printf("Time for patching heuristic: %lf\n", patching_time);
-	printf("Time for 2-opt: %lf\n", two_opt_time);
-	printf("Cost of heuristic solution: %lf\n", heuristic_solution->cost);
-	printf("Cost of incumbent solution: %lf\n", objval);
-	if (heuristic_solution->cost < objval) {
 
-		double time_for_posting = INF_COST;
-		time = second();
-		printf("Updating the incumbent from %lf to %lf\n", objval, heuristic_solution->cost);
+	if (heuristic_solution->cost < incumbent) {
+
+		printf("Updating the incumbent from %lf to %lf\n", incumbent, heuristic_solution->cost);
 		check_sol(heuristic_solution->path, heuristic_solution->cost, inst);
 
 		int *succ_heuristics = (int *)malloc(inst->nnodes * sizeof(int));
@@ -462,8 +451,6 @@ void post_heuristic_solution(CPXCALLBACKCONTEXTptr context, instance *inst, int 
 		free(ind);
 		free(succ_heuristics);
 		free(xheu);
-		time_for_posting = second() - time;
-		printf("Time for posting heuristic solution: %lf\n", time_for_posting);
 	}
     free(heuristic_solution->path);
     free(heuristic_solution);
@@ -478,7 +465,6 @@ void post_heuristic_solution(CPXCALLBACKCONTEXTptr context, instance *inst, int 
  * @return
  */
 int CPXPUBLIC candidate_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void *userhandle ) {
-
 	instance* inst = (instance*) userhandle;
 		
 	char sense = 'L';
@@ -544,14 +530,7 @@ int CPXPUBLIC candidate_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contexti
 			print_error("CPXgetcallbackinfo() error getting CANDIDATE_SOURCE");
 		}
 
-		if(status == CPX_LAZYCONSTRAINTCALLBACK_NODE){
-			error = CPXcallbackgetinfoint(context, CPXCALLBACKINFO_NODEDEPTH, &nodedepth);
-			if(error) {
-				print_error("CPXgetcallbackinfo() error getting NODEDEPTH");
-			}
-		}
-		//printf("NOde depth: %ld\n", nodedepth);
-		if (inst->mode == 2) {
+		if (inst->mode == 2 || inst->mode == 4) {
 			post_heuristic_solution(context, inst, succ, ncomp, comp, incumbent);
 		}
 	}
@@ -789,81 +768,6 @@ int branch_and_cut(CPXENVptr env, CPXLPptr lp, CPXLONG contextid, instance *inst
 
 }
 
-
-void patch_solution(double *xstar, instance *inst) {
-    int *succ = (int *) malloc(inst->nnodes * sizeof(int));
-    int *comp = (int *) malloc(inst->nnodes * sizeof(int));
-    int ncomp;
-
-    build_sol(xstar, inst, succ, comp, &ncomp);
-
-    if (ncomp <= 1) {
-        if (VERBOSE >= 50) {
-            printf("No patching needed. Solution is a single tour.\n");
-        }
-        free(succ);
-        free(comp);
-        return;
-    }
-
-    if (VERBOSE >= 50) {
-        printf("Patching needed. Components found: %d\n", ncomp);
-    }
-
-    while (ncomp > 1) {
-
-        double best_cost = DBL_MAX;
-        int best_i = -1, best_j = -1;
-        int succ_i = -1, succ_j = -1;
-        bool swap = false;
-
-        for (int i = 0; i < inst->nnodes; i++) {
-            for (int j = i + 1; j < inst->nnodes; j++) {
-                if (comp[i] != comp[j]) {
-                    succ_i = succ[i];
-                    succ_j = succ[j];
-                    double cij = inst->distances[i * inst->nnodes + j] + inst->distances[succ_i * inst->nnodes + succ_j] - inst->distances[i * inst->nnodes + succ_i] - inst->distances[j * inst->nnodes + succ_j];
-                    if (cij < best_cost) {
-                        swap = false;
-                        best_cost = cij;
-                        best_i = i;
-                        best_j = j;
-                    }
-                    double cij_swap = inst->distances[i * inst->nnodes + succ_j] + inst->distances[j * inst->nnodes + succ_i] - inst->distances[i * inst->nnodes + succ_i] - inst->distances[j * inst->nnodes + succ_j];
-                    if (cij_swap < best_cost) {
-                        best_cost = cij_swap;
-                        best_i = i;
-                        best_j = j;
-                        swap = true;
-                    }
-                }
-            }
-        }
-
-        if (best_i == -1 || best_j == -1) {
-            printf("No valid edge pairs found. Aborting patching.\n");
-            break;
-        }
-
-        succ_i = succ[best_i];
-        succ_j = succ[best_j];
-        xstar[xpos(best_i, succ_i, inst)] = 0.0;
-        xstar[xpos(best_j, succ_j, inst)] = 0.0;
-        if  (swap == false){
-            xstar[xpos(best_i, best_j, inst)] = 1.0;
-            xstar[xpos(succ_i, succ_j, inst)] = 1.0;
-        }
-        else if (swap == true) {
-            xstar[xpos(best_i, succ_j, inst)] = 1.0;
-            xstar[xpos(best_j, succ_i, inst)] = 1.0;
-        }
-        build_sol(xstar, inst, succ, comp, &ncomp);
-    }
-
-    free(succ);
-    free(comp);
-}
-
 /**
  * Function to implement the patching heuristic to a solution
  * @param succ
@@ -872,81 +776,77 @@ void patch_solution(double *xstar, instance *inst) {
  * @param inst
  */
 void patching_heuristic(int* succ, int ncomp, int* comp, instance* inst) {
-	if (succ == NULL) { print_error("Error occurred while allocating memory for succ\n"); }
-	if (comp == NULL) { print_error("Error occurred while allocating memory for comp\n"); }
-	if (inst == NULL) { print_error("Error occurred while allocating memory for inst\n"); }
+    if (succ == NULL) { print_error("Error occurred while allocating memory for succ\n"); }
+    if (comp == NULL) { print_error("Error occurred while allocating memory for comp\n"); }
+    if (inst == NULL) { print_error("Error occurred while allocating memory for inst\n"); }
 
-	while (ncomp > 1) {
-
-        double best_cost = DBL_MAX;
-        int best_i = -1, best_j = -1;
-        int succ_i = -1, succ_j = -1;
-        bool swap = false;
+    while (ncomp > 1) {
+        int best_i = -1;
+        int best_j = -1;
+        int best_cross = 0;
+        double best_delta = INF_COST;
 
         for (int i = 0; i < inst->nnodes; i++) {
             for (int j = i + 1; j < inst->nnodes; j++) {
                 if (comp[i] != comp[j]) {
-                    succ_i = succ[i];
-                    succ_j = succ[j];
-                    double cij = inst->distances[i * inst->nnodes + j] + inst->distances[succ_i * inst->nnodes + succ_j] - inst->distances[i * inst->nnodes + succ_i] - inst->distances[j * inst->nnodes + succ_j];
-                    if (cij < best_cost) {
-                        swap = false;
-                        best_cost = cij;
+                    double delta = compute_delta_straight(i, j, succ, inst);
+                    if (delta + EPS_COST < best_delta) {
+                        best_delta = delta;
                         best_i = i;
                         best_j = j;
+                        best_cross = 0;
                     }
-                    double cij_swap = inst->distances[i * inst->nnodes + succ_j] + inst->distances[j * inst->nnodes + succ_i] - inst->distances[i * inst->nnodes + succ_i] - inst->distances[j * inst->nnodes + succ_j];
-                    if (cij_swap < best_cost) {
-                        best_cost = cij_swap;
+                    double delta_cross = compute_delta_cross(i, j, succ, inst);
+                    if (delta_cross < best_delta + EPS_COST) {
+                        best_delta = delta_cross;
                         best_i = i;
                         best_j = j;
-                        swap = true;
+                        best_cross = 1;
                     }
                 }
             }
         }
 
-        if (best_i == -1 || best_j == -1) {
-            printf("No valid edge pairs found. Aborting patching.\n");
-            break;
+        if (best_i < 0 || best_j < 0) {
+            print_error("No valid patch found\n");
         }
 
-        succ_i = succ[best_i];
-        succ_j = succ[best_j];
-        xstar[xpos(best_i, succ_i, inst)] = 0.0;
-        xstar[xpos(best_j, succ_j, inst)] = 0.0;
-        if  (swap == false){
-            xstar[xpos(best_i, best_j, inst)] = 1.0;
-            xstar[xpos(succ_i, succ_j, inst)] = 1.0;
-        }
-        else if (swap == true) {
-            xstar[xpos(best_i, succ_j, inst)] = 1.0;
-            xstar[xpos(best_j, succ_i, inst)] = 1.0;
-        }
-        build_sol(xstar, inst, succ, comp, &ncomp);
-    }
+        if (best_cross) {
+			int temp = succ[best_i];
+			succ[best_i] = succ[best_j];
+			succ[best_j] = temp;
 
-	/*while (ncomp > 1) {
-		int best_i = -1;
-		int best_j = -1;
-		int cross_flag = -1;
-		double best_delta = INF_COST;
-		for (int i = 0; i < inst->nnodes; i++) {
-			for (int j = 0; j < inst->nnodes; j++) {
-				if (i == j) continue;
-
-				if (comp[i] != comp[j]) {
-					update_best_delta(i, j, succ, inst, &best_i, &best_j, &best_delta, &cross_flag);
+			for (int k = 0; k < inst->nnodes; k++) {
+				if (comp[k] == comp[best_j] && k != best_j) {
+					comp[k] = comp[best_i];
 				}
 			}
-		}
-		if (cross_flag) {
-			patch_cross_case(succ, comp, &ncomp, best_i, best_j, inst);
-		} else {
-			patch_straight_case(succ, comp, &ncomp, best_i, best_j, inst);
-		}
-	}*/
-	if (VERBOSE > 2000) { printf("Finished patching heuristic\n"); }
+			comp[best_j] = comp[best_i];
+			ncomp--;
+        } 
+		else {
+			int temp = succ[best_i];
+			succ[best_i] = best_j;
+			int past_node = succ[best_j];
+			int current_node = succ[past_node];
+			succ[past_node] = temp;
+
+			// Reverse the component of best_j and succ[best_j]
+			reverse_component(succ, best_j, current_node, past_node);
+
+			for (int k = 0; k < inst->nnodes; k++) {
+				if (comp[k] == comp[best_j] && k != best_j) {
+					comp[k] = comp[best_i];
+				}
+			}
+			comp[best_j] = comp[best_i];
+			ncomp--;
+        }
+    }
+
+    if (VERBOSE > 2000) {
+        printf("Finished patching heuristic\n");
+    }
 }
 
 /**

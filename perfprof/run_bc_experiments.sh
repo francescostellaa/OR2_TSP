@@ -16,7 +16,7 @@ if [ ! -f "$EXECUTABLE" ]; then
 fi
 
 # Create CSV header
-echo "4;regular;warm_start;heuristic_posting;fractional" > $OUTPUT_FILE
+echo "5;regular;warm start;heuristic posting;fractional;warm start + posting" > $OUTPUT_FILE
 
 # Generate and run instances
 for ((i=0; i<NUM_INSTANCES; i++)); do
@@ -36,8 +36,11 @@ for ((i=0; i<NUM_INSTANCES; i++)); do
     # Run Branch and cut with fractional cuts
     RESULT_FRACTIONAL=$($EXECUTABLE -time_limit $TIME_LIMIT -seed $((SEED + i)) -nodes $NODES -alg 6 -mode 3 | grep "Total execution time: " | awk '{print $4}')
     
+    # Run Branch and cut with warm start and heuristic posting
+    RESULT_WARM_START_POSTING=$($EXECUTABLE -time_limit $TIME_LIMIT -seed $((SEED + i)) -nodes $NODES -alg 6 -mode 4 | grep "Total execution time: " | awk '{print $4}')
+
     # Save results
-    echo "inst${i};${RESULT_BC};${RESULT_WARM_START};${RESULT_POSTING};${RESULT_FRACTIONAL}" >> $OUTPUT_FILE
+    echo "inst${i};${RESULT_BC};${RESULT_WARM_START};${RESULT_POSTING};${RESULT_FRACTIONAL};${RESULT_WARM_START_POSTING}" >> $OUTPUT_FILE
 
 done
 

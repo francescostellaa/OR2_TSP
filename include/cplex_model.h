@@ -24,7 +24,7 @@ void build_sol(const double *xstar, instance *inst, int *succ, int *comp, int *n
 void add_sec(int* nnz, double* rhs, int comp_index, int* index, double* value, char** cname, int *comp, instance *inst);
 void save_history_benders(double cost, double time, const char* filename);
 void plot_cost_benders(const char *input_file, const char *output_file);
-void post_heuristic_solution(CPXCALLBACKCONTEXTptr context, instance *inst, int *succ, int ncomp, int *comp, double objval);
+void post_heuristic_solution(CPXCALLBACKCONTEXTptr context, instance *inst, int *succ, int ncomp, int *comp, double incumbent);
 void patching_heuristic(int *succ, int ncomp, int *comp, instance *inst);
 int warm_start(CPXENVptr env, CPXLPptr lp, int* succ, instance *inst);
 int benders(CPXENVptr env, CPXLPptr lp, instance *inst, int *succ, int ncomp, tour* solution);

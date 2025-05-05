@@ -16,10 +16,7 @@ void reconstruct_sol(tour* solution, int* succ, const instance* inst);
 void check_degrees(instance* inst, const double* xstar);
 double compute_delta_straight(int i, int j, int* succ, instance* inst);
 double compute_delta_cross(int i, int j, int* succ, instance* inst);
-void update_best_delta(int i, int j, int *succ, instance *inst, int *best_i, int *best_j, double *best_delta, int *cross_flag);
-void patch_cross_case(int *succ, int *comp, int *ncomp, int best_i, int best_j, instance *inst);
 void reverse_component(int *succ, int best_j, int current_node, int past_node);
-void patch_straight_case(int *succ, int *comp, int *ncomp, int best_i, int best_j, instance *inst);
 void from_solution_to_succ(int* succ, tour* solution, const instance* inst);
 
 #endif // CPLEX_UTILITIES_H

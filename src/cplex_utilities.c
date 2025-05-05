@@ -133,25 +133,23 @@ void from_solution_to_succ(int* succ, tour* solution, const instance* inst) {
  * @param inst
  */
 void reconstruct_sol(tour* solution, int* succ, const instance* inst) {
-	if (solution == NULL) {
-		print_error("solution is NULL");
-	}
-	if (succ == NULL) {
-		print_error("succ is NULL");
-	}
-	if (inst == NULL) {
-		print_error("inst is NULL");
-	}
+	if (solution == NULL) print_error("solution is NULL");
+	if (succ == NULL) print_error("succ is NULL");
+	if (inst == NULL) print_error("inst is NULL");
+
 	solution->cost = INF_COST;
 	solution->path = (int *)malloc((inst->nnodes + 1) * sizeof(int));
+	if (solution->path == NULL) print_error("Memory allocation failed for solution path");
+
 	//fill solution->path with the solution from succ array starting from node 0
 	int start = 0;
 	int current = start;
-	do {
-		solution->path[current] = succ[current];
+
+	for (int i = 0; i < inst->nnodes; i++) {
+		solution->path[i] = current;
 		current = succ[current];
-	} while (current != start);
-	solution->path[inst->nnodes] = solution->path[0]; // Close the tour
+	}
+	solution->path[inst->nnodes] = start; // close the tour
 	compute_solution_cost(solution, inst);
 }
 
@@ -184,12 +182,6 @@ void check_degrees(instance* inst, const double* xstar) {
 }
 
 double compute_delta_straight(int i, int j, int* succ, instance* inst) {
-	if (succ == NULL) { print_error("Error occurred while allocating memory for succ\n"); }
-	if (inst == NULL) { print_error("Error occurred while allocating memory for inst\n"); }
-	assert(succ != NULL);
-	assert(inst != NULL);
-	assert(i >= 0 && i < inst->nnodes);
-	assert(j >= 0 && j < inst->nnodes);
 
 	double delta_straight = inst->cost_matrix[i * inst->nnodes + j] +
 		inst->cost_matrix[succ[i] * inst->nnodes + succ[j]] -
@@ -199,58 +191,12 @@ double compute_delta_straight(int i, int j, int* succ, instance* inst) {
 }
 
 double compute_delta_cross(int i, int j, int* succ, instance* inst) {
-	if (succ == NULL) { print_error("Error occurred while allocating memory for succ\n"); }
-	if (inst == NULL) { print_error("Error occurred while allocating memory for inst\n"); }
-	assert(succ != NULL);
-	assert(inst != NULL);
-	assert(i >= 0 && i < inst->nnodes);
-	assert(j >= 0 && j < inst->nnodes);
 
 	double delta_cross = inst->cost_matrix[i * inst->nnodes + succ[j]] +
 		inst->cost_matrix[succ[i] * inst->nnodes + j] -
 		inst->cost_matrix[i * inst->nnodes + succ[i]] -
 		inst->cost_matrix[j * inst->nnodes + succ[j]];
 	return delta_cross;
-}
-
-void update_best_delta(int i, int j, int *succ, instance *inst, int *best_i, int *best_j, double *best_delta, int *cross_flag) {
-	double delta_straight = compute_delta_straight(i, j, succ, inst);
-	double delta_cross = compute_delta_cross(i, j, succ, inst);
-
-	if (delta_straight + EPS_COST < *best_delta || delta_cross + EPS_COST < *best_delta) {
-		*best_i = i;
-		*best_j = j;
-		if (delta_cross < delta_straight) {
-			*best_delta = delta_cross;
-			*cross_flag = 1;
-		} else {
-			*best_delta = delta_straight;
-			*cross_flag = 0;
-		}
-	}
-}
-
-/**
- * Handle the cross patching case in the heuristic.
- * @param succ Successor array.
- * @param comp Component array.
- * @param ncomp Pointer to the number of components.
- * @param best_i Best i index.
- * @param best_j Best j index.
- * @param inst Instance of the problem.
- */
-void patch_cross_case(int *succ, int *comp, int *ncomp, int best_i, int best_j, instance *inst) {
-    int temp = succ[best_i];
-    succ[best_i] = succ[best_j];
-    succ[best_j] = temp;
-
-    for (int k = 0; k < inst->nnodes; k++) {
-        if (comp[k] == comp[best_j] && k != best_j) {
-            comp[k] = comp[best_i];
-        }
-    }
-    comp[best_j] = comp[best_i];
-    (*ncomp)--;
 }
 
 /**
@@ -270,32 +216,4 @@ void reverse_component(int *succ, int best_j, int current_node, int past_node) {
     }
     succ[current_node] = past_node;
     succ[best_j] = current_node;
-}
-
-/**
- * Handle the straight patching case in the heuristic.
- * @param succ Successor array.
- * @param comp Component array.
- * @param ncomp Pointer to the number of components.
- * @param best_i Best i index.
- * @param best_j Best j index.
- * @param inst Instance of the problem.
- */
-void patch_straight_case(int *succ, int *comp, int *ncomp, int best_i, int best_j, instance *inst) {
-    int temp = succ[best_i];
-    succ[best_i] = best_j;
-    int past_node = succ[best_j];
-    int current_node = succ[past_node];
-    succ[past_node] = temp;
-
-    // Reverse the component of best_j and succ[best_j]
-    reverse_component(succ, best_j, current_node, past_node);
-
-    for (int k = 0; k < inst->nnodes; k++) {
-        if (comp[k] == comp[best_j] && k != best_j) {
-            comp[k] = comp[best_i];
-        }
-    }
-    comp[best_j] = comp[best_i];
-    (*ncomp)--;
 }
