@@ -246,7 +246,7 @@ void add_sec(int* nnz, double* rhs, int comp_index, int* index, double* value, c
  */
 void solver(CPXENVptr env, CPXLPptr lp, instance *inst, double *xstar, int *succ, int *comp, int *ncomp, double *objval) {
 
-	if (inst->mode == 1) {
+	if (inst->mode == 1 || inst->mode == 2) {
 		warm_start(env, lp, succ, inst);
 	}
 
@@ -278,9 +278,9 @@ void solver(CPXENVptr env, CPXLPptr lp, instance *inst, double *xstar, int *succ
 int warm_start(CPXENVptr env, CPXLPptr lp, int* succ, instance *inst) {
 	tour* solution = malloc(sizeof(tour));
 	solution->path = malloc((inst->nnodes + 1) * sizeof(int));
-	solution->cost = INF_COST;
+	solution->cost = 0.0;
 
-	greedy(0, solution, 1, inst);
+	if (greedy(0, solution, 1, inst)) { print_error("Error during heuristic\n");}
 	//vns(inst, solution, inst->timelimit * 0.01, 3);
 	if (VERBOSE > 1000) {
 		printf("Initial solution cost: %lf\n found after %5.2lf second\n", solution->cost, second() - inst->tstart);
@@ -414,22 +414,27 @@ void post_heuristic_solution(CPXCALLBACKCONTEXTptr context, instance *inst, int 
     }
 
     tour* heuristic_solution = malloc(sizeof(tour));
-	//double time = second();
-	//double patching_time = INF_COST;
-    patching_heuristic(succ, ncomp, comp, inst);
-	//patching_time = second() - time;
+	double time = second();
+	double patching_time = INF_COST;
+    //patching_heuristic(succ, ncomp, comp, inst);
 
-	//double two_opt_time = INF_COST;
+	//patch_solution(xstar, inst);
+	patching_time = second() - time;
+	double two_opt_time = INF_COST;
+	time = second();
     reconstruct_sol(heuristic_solution, succ, inst);
-	//time = second();
-    two_opt(heuristic_solution, inst);
-	//two_opt_time = second() - time;
-	/*printf("Time for patching heuristic: %lf\n", patching_time);
-	printf("Time for 2-opt: %lf\n", two_opt_time);*/
-	if (heuristic_solution->cost < objval) {
-		/*double time_for_posting = INF_COST;
-		time = second();*/
 
+    two_opt(heuristic_solution, inst);
+	two_opt_time = second() - time;
+	printf("Time for patching heuristic: %lf\n", patching_time);
+	printf("Time for 2-opt: %lf\n", two_opt_time);
+	printf("Cost of heuristic solution: %lf\n", heuristic_solution->cost);
+	printf("Cost of incumbent solution: %lf\n", objval);
+	if (heuristic_solution->cost < objval) {
+
+		double time_for_posting = INF_COST;
+		time = second();
+		printf("Updating the incumbent from %lf to %lf\n", objval, heuristic_solution->cost);
 		check_sol(heuristic_solution->path, heuristic_solution->cost, inst);
 
 		int *succ_heuristics = (int *)malloc(inst->nnodes * sizeof(int));
@@ -457,8 +462,8 @@ void post_heuristic_solution(CPXCALLBACKCONTEXTptr context, instance *inst, int 
 		free(ind);
 		free(succ_heuristics);
 		free(xheu);
-		//time_for_posting = second() - time;
-		//printf("Time for posting heuristic solution: %lf\n", time_for_posting);
+		time_for_posting = second() - time;
+		printf("Time for posting heuristic solution: %lf\n", time_for_posting);
 	}
     free(heuristic_solution->path);
     free(heuristic_solution);
@@ -493,6 +498,11 @@ int CPXPUBLIC candidate_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contexti
 	}
 	build_sol(xstar, inst, succ, comp, &ncomp);
 
+	double incumbent;
+	double x_dummy;
+	//CPXcallbackgetinfodbl(context, CPXCALLBACKINFO_BEST_SOL, &incumbent);
+	CPXcallbackgetincumbent(context, &x_dummy, 0, 0, &incumbent);
+
 	if (ncomp >= 2) {
 
 		int* index = (int *)malloc(inst->ncols * sizeof(int));
@@ -525,11 +535,27 @@ int CPXPUBLIC candidate_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contexti
 		free(index);
 
 		// post_heuristic solution
-		if (inst->mode == 2) {
-			post_heuristic_solution(context, inst, succ, ncomp, comp, objval);
+		CPXLONG nodedepth;
+		int status;
+
+		int error = CPXcallbackgetinfoint(context, CPXCALLBACKINFO_CANDIDATE_SOURCE, &status);
+
+		if(error){
+			print_error("CPXgetcallbackinfo() error getting CANDIDATE_SOURCE");
 		}
 
+		if(status == CPX_LAZYCONSTRAINTCALLBACK_NODE){
+			error = CPXcallbackgetinfoint(context, CPXCALLBACKINFO_NODEDEPTH, &nodedepth);
+			if(error) {
+				print_error("CPXgetcallbackinfo() error getting NODEDEPTH");
+			}
+		}
+		//printf("NOde depth: %ld\n", nodedepth);
+		if (inst->mode == 2) {
+			post_heuristic_solution(context, inst, succ, ncomp, comp, incumbent);
+		}
 	}
+
 	free(comp);
 	free(xstar);
 
@@ -564,9 +590,6 @@ int violated_cut_callback(double cut_val, int cut_nodes, int* cut, void* params)
 			nnz++;
 		}
 	}
-
-
-
 
 	/*double violation = cut_violation(nnz, rhs, sense, index, value, parameters->xstar);
 	double expected_violation = (2.0-cut_val)/2.0;
@@ -624,8 +647,8 @@ int CPXPUBLIC relaxation_callback(CPXCALLBACKCONTEXTptr context, CPXLONG context
 	if (CPXcallbackgetinfoint(context, CPXCALLBACKINFO_NODECOUNT, &current_node))
 		print_error("CPXcallbackgetinfoint error");
 		
-	/*if(current_node % inst->nnodes != 0)
-		return 0;*/
+	if(current_node % inst->nnodes != 0)
+		return 0;
 
 	int index = 0;
 	for (int i = 0; i < inst->nnodes; i++) {
@@ -766,6 +789,81 @@ int branch_and_cut(CPXENVptr env, CPXLPptr lp, CPXLONG contextid, instance *inst
 
 }
 
+
+void patch_solution(double *xstar, instance *inst) {
+    int *succ = (int *) malloc(inst->nnodes * sizeof(int));
+    int *comp = (int *) malloc(inst->nnodes * sizeof(int));
+    int ncomp;
+
+    build_sol(xstar, inst, succ, comp, &ncomp);
+
+    if (ncomp <= 1) {
+        if (VERBOSE >= 50) {
+            printf("No patching needed. Solution is a single tour.\n");
+        }
+        free(succ);
+        free(comp);
+        return;
+    }
+
+    if (VERBOSE >= 50) {
+        printf("Patching needed. Components found: %d\n", ncomp);
+    }
+
+    while (ncomp > 1) {
+
+        double best_cost = DBL_MAX;
+        int best_i = -1, best_j = -1;
+        int succ_i = -1, succ_j = -1;
+        bool swap = false;
+
+        for (int i = 0; i < inst->nnodes; i++) {
+            for (int j = i + 1; j < inst->nnodes; j++) {
+                if (comp[i] != comp[j]) {
+                    succ_i = succ[i];
+                    succ_j = succ[j];
+                    double cij = inst->distances[i * inst->nnodes + j] + inst->distances[succ_i * inst->nnodes + succ_j] - inst->distances[i * inst->nnodes + succ_i] - inst->distances[j * inst->nnodes + succ_j];
+                    if (cij < best_cost) {
+                        swap = false;
+                        best_cost = cij;
+                        best_i = i;
+                        best_j = j;
+                    }
+                    double cij_swap = inst->distances[i * inst->nnodes + succ_j] + inst->distances[j * inst->nnodes + succ_i] - inst->distances[i * inst->nnodes + succ_i] - inst->distances[j * inst->nnodes + succ_j];
+                    if (cij_swap < best_cost) {
+                        best_cost = cij_swap;
+                        best_i = i;
+                        best_j = j;
+                        swap = true;
+                    }
+                }
+            }
+        }
+
+        if (best_i == -1 || best_j == -1) {
+            printf("No valid edge pairs found. Aborting patching.\n");
+            break;
+        }
+
+        succ_i = succ[best_i];
+        succ_j = succ[best_j];
+        xstar[xpos(best_i, succ_i, inst)] = 0.0;
+        xstar[xpos(best_j, succ_j, inst)] = 0.0;
+        if  (swap == false){
+            xstar[xpos(best_i, best_j, inst)] = 1.0;
+            xstar[xpos(succ_i, succ_j, inst)] = 1.0;
+        }
+        else if (swap == true) {
+            xstar[xpos(best_i, succ_j, inst)] = 1.0;
+            xstar[xpos(best_j, succ_i, inst)] = 1.0;
+        }
+        build_sol(xstar, inst, succ, comp, &ncomp);
+    }
+
+    free(succ);
+    free(comp);
+}
+
 /**
  * Function to implement the patching heuristic to a solution
  * @param succ
@@ -779,6 +877,56 @@ void patching_heuristic(int* succ, int ncomp, int* comp, instance* inst) {
 	if (inst == NULL) { print_error("Error occurred while allocating memory for inst\n"); }
 
 	while (ncomp > 1) {
+
+        double best_cost = DBL_MAX;
+        int best_i = -1, best_j = -1;
+        int succ_i = -1, succ_j = -1;
+        bool swap = false;
+
+        for (int i = 0; i < inst->nnodes; i++) {
+            for (int j = i + 1; j < inst->nnodes; j++) {
+                if (comp[i] != comp[j]) {
+                    succ_i = succ[i];
+                    succ_j = succ[j];
+                    double cij = inst->distances[i * inst->nnodes + j] + inst->distances[succ_i * inst->nnodes + succ_j] - inst->distances[i * inst->nnodes + succ_i] - inst->distances[j * inst->nnodes + succ_j];
+                    if (cij < best_cost) {
+                        swap = false;
+                        best_cost = cij;
+                        best_i = i;
+                        best_j = j;
+                    }
+                    double cij_swap = inst->distances[i * inst->nnodes + succ_j] + inst->distances[j * inst->nnodes + succ_i] - inst->distances[i * inst->nnodes + succ_i] - inst->distances[j * inst->nnodes + succ_j];
+                    if (cij_swap < best_cost) {
+                        best_cost = cij_swap;
+                        best_i = i;
+                        best_j = j;
+                        swap = true;
+                    }
+                }
+            }
+        }
+
+        if (best_i == -1 || best_j == -1) {
+            printf("No valid edge pairs found. Aborting patching.\n");
+            break;
+        }
+
+        succ_i = succ[best_i];
+        succ_j = succ[best_j];
+        xstar[xpos(best_i, succ_i, inst)] = 0.0;
+        xstar[xpos(best_j, succ_j, inst)] = 0.0;
+        if  (swap == false){
+            xstar[xpos(best_i, best_j, inst)] = 1.0;
+            xstar[xpos(succ_i, succ_j, inst)] = 1.0;
+        }
+        else if (swap == true) {
+            xstar[xpos(best_i, succ_j, inst)] = 1.0;
+            xstar[xpos(best_j, succ_i, inst)] = 1.0;
+        }
+        build_sol(xstar, inst, succ, comp, &ncomp);
+    }
+
+	/*while (ncomp > 1) {
 		int best_i = -1;
 		int best_j = -1;
 		int cross_flag = -1;
@@ -797,7 +945,7 @@ void patching_heuristic(int* succ, int ncomp, int* comp, instance* inst) {
 		} else {
 			patch_straight_case(succ, comp, &ncomp, best_i, best_j, inst);
 		}
-	}
+	}*/
 	if (VERBOSE > 2000) { printf("Finished patching heuristic\n"); }
 }
 
@@ -827,7 +975,7 @@ int TSPopt(instance *inst, int alg) {
     build_model(inst, env, lp);
 	printf("Time limit: %lf\n", inst->timelimit);
     // Set CPLEX parameters
-    if (CPXsetintparam(env, CPX_PARAM_SCRIND, 1)) // Enable screen output
+    if (CPXsetintparam(env, CPX_PARAM_SCRIND, 0)) // Enable screen output
         print_error("CPXsetintparam() error");
     if (CPXsetdblparam(env, CPX_PARAM_TILIM, inst->timelimit)) // Time limit
         print_error("CPXsetdblparam() error");

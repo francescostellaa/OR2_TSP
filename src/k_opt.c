@@ -3,7 +3,7 @@
 /**
  * Apply the 2-opt refinement to the solution
  */
-/*void two_opt(tour* solution, const instance* inst) {
+void two_opt(tour* solution, const instance* inst) {
     const int n = inst->nnodes;
 
     int improvement = 1;
@@ -45,9 +45,10 @@
         }
     }
     //update_best_sol(inst, solution);
-}*/
+}
 
 
+/*
 void two_opt(tour* solution, const instance* inst) {
     const int n = inst->nnodes;
 
@@ -119,8 +120,8 @@ void two_opt(tour* solution, const instance* inst) {
     }
 
     free(new_path);
-    //update_best_sol(inst, solution);
 }
+*/
 
 
 /**
