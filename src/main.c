@@ -4,6 +4,7 @@
 #include <tabu.h>
 #include <grasp.h>
 #include <cplex_model.h>
+#include <matheuristics.h>
 
 int main(int argc, char **argv) {
     if ( argc < 2 ) { printf("Wrong command line parameters\n"); exit(1); }       
@@ -93,6 +94,12 @@ int main(int argc, char **argv) {
             if (VERBOSE >= 1) { printf("Running Benders...\n"); }
             if (TSPopt(&inst, 7)) {
                 print_error("Error in TSPopt\n");
+            }
+            break;
+        case 8:
+            if (VERBOSE >= 1) { printf("Running Hard-Fixing...\n"); }
+            if (hard_fixing(&inst)) {
+                print_error("Error in Hard-Fixing\n");
             }
             break;
         default:
