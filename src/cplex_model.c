@@ -857,7 +857,7 @@ int TSPopt(instance *inst, int alg) {
     build_model(inst, env, lp);
 	printf("Time limit: %lf\n", inst->timelimit);
     // Set CPLEX parameters
-    if (CPXsetintparam(env, CPX_PARAM_SCRIND, 0)) // Enable screen output
+    if (CPXsetintparam(env, CPX_PARAM_SCRIND, 1)) // Enable screen output
         print_error("CPXsetintparam() error");
     if (CPXsetdblparam(env, CPX_PARAM_TILIM, inst->timelimit)) // Time limit
         print_error("CPXsetdblparam() error");

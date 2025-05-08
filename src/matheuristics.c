@@ -32,6 +32,9 @@ int hard_fixing(instance* inst) {
         print_error(errormsg);
     }
     build_model(inst, env, lp);
+    inst->ncols = CPXgetnumcols(env, lp);
+
+
     if (CPXsetintparam(env, CPX_PARAM_SCRIND, 1)) // Enable screen output
         print_error("CPXsetintparam() error");
     if (CPXsetintparam(env, CPX_PARAM_MIPDISPLAY, 2)) // Verbosity level
@@ -47,13 +50,13 @@ int hard_fixing(instance* inst) {
     for (int i = 0; i < inst->nnodes; i++) { xstar[xpos(i, succ[i], inst)] = 1.0; }
     double p = 0.5;
     double residual_time = inst->timelimit - (inst->timelimit * 0.1);
-    printf("HERE1\n");
+
     while (true) {
         if (second() - inst->tstart > residual_time) {
             printf("Time limit reached\n");
             break;
         }
-        int* fixed_edges = calloc(sizeof(int),inst->nnodes);
+        int* fixed_edges = calloc(inst->nnodes,sizeof(int));
 
         int cnt = 0;
         for (int i = 0; i < inst->nnodes; i++) {
@@ -69,10 +72,9 @@ int hard_fixing(instance* inst) {
         memset(bd, 1.0, cnt);
 
         CPXchgbds(env, lp, cnt, fixed_edges, lu, bd);
-        printf("HERE2\n");
         if (CPXsetdblparam(env, CPX_PARAM_TILIM, min(current_residual_time, inst->timelimit / 20)))
             print_error("CPXsetdblparam() error");
-
+        //64961.000000
         if (CPXmipopt(env, lp)) {
             char errormsg[CPXMESSAGEBUFSIZE];
             CPXgeterrorstring(env, error, errormsg);
@@ -90,11 +92,9 @@ int hard_fixing(instance* inst) {
             check_sol(solution->path, solution->cost, inst);
             solution->cost = objval;
             for (int i = 0; i < inst->nnodes; i++) {
-                for (int j = i + 1; j < inst->nnodes; j++) {
-                    if (xstar[xpos(i, j, inst)] > 0.5) {
-                        succ[i] = j;
-                    }
-                }
+                if (xstar[xpos(solution->path[i], solution->path[i + 1], inst)] > 0.5) {
+                    succ[solution->path[i]] = solution->path[i + 1];
+            }
             }
 
             // Reconstruct the solution path from the successors array and check its feasibility
@@ -113,9 +113,6 @@ int hard_fixing(instance* inst) {
         free(lu);
         free(fixed_edges);
 
-        if (VERBOSE > 1000) {
-            printf("HERE\n");
-        }
     }
 
     // Update the best solution
