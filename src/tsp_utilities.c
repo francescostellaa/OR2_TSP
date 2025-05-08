@@ -188,7 +188,7 @@ void parse_command_line(int argc, char** argv, instance *inst, parameters *param
         printf("-time_limit <value>      : Time limit for the algorithm (in seconds)\n");
         printf("-seed <value>            : Random seed for reproducibility\n");
         printf("-nodes <value>           : Number of nodes (if no input file is provided)\n");
-        printf("-alg <algorithm>         : Algorithm choice (1: GREEDY, 2: GREEDY+2OPT, 3: VNS, 4: TABU, 5: GRASP, 6: Branch & Cut, 7: Benders)\n");
+        printf("-alg <algorithm>         : Algorithm choice (1: GREEDY, 2: GREEDY+2OPT, 3: VNS, 4: TABU, 5: GRASP, 6: Branch & Cut, 7: Benders, 8: Hard-Fixing)\n");
         printf("-num_kicks <value>       : Number of kicks for VNS (default: 3)\n");
         printf("-interval_tenure <value> : Interval tenure for Tabu Search (default: 75)\n");
         printf("-tenure_scaling <value>  : Tenure scaling for Tabu Search (default: 0.5)\n");
@@ -206,7 +206,7 @@ void parse_command_line(int argc, char** argv, instance *inst, parameters *param
         }
     }
 
-    if (alg_choice < 0 || alg_choice > 7) {
+    if (alg_choice < 0 || alg_choice > 8) {
         print_error("Algorithm choice not defined or out of range\n");
     } else {
         *alg = alg_choice;

@@ -7,24 +7,6 @@
 #include <termios.h>
 #include <unistd.h>
 
-void press_a_key() {
-	struct termios oldt, newt;
-
-	// Get the current terminal settings
-	tcgetattr(STDIN_FILENO, &oldt);
-	newt = oldt;
-
-	// Disable canonical mode and echo
-	newt.c_lflag &= ~(ICANON | ECHO);
-	tcsetattr(STDIN_FILENO, TCSANOW, &newt);
-
-	printf("Press any key to continue...\n");
-	getchar(); // Wait for a key press
-
-	// Restore the original terminal settings
-	tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-}
-
 /**
  * Build the solution from the output of cplex model
  * @param xstar
