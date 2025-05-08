@@ -192,7 +192,7 @@ void parse_command_line(int argc, char** argv, instance *inst, parameters *param
         printf("-num_kicks <value>       : Number of kicks for VNS (default: 3)\n");
         printf("-interval_tenure <value> : Interval tenure for Tabu Search (default: 75)\n");
         printf("-tenure_scaling <value>  : Tenure scaling for Tabu Search (default: 0.5)\n");
-        printf("-mode <value>            : Exact solvings optional modes (1: warm start, 2: posting heuristics)\n");
+        printf("-mode <value>            : Exact solvings optional modes (1: warm start, 2: posting heuristics, 3: fractional cuts, 4: warm start + posting heuristics)\n");
         printf("-help or --help          : Display this help message\n");
         printf("----------------------------------------------------------------------------------------------\n\n");
         exit(0); 
@@ -213,7 +213,7 @@ void parse_command_line(int argc, char** argv, instance *inst, parameters *param
         printf("Algorithm choice: %d\n", *alg);
     }
 
-    if (mode_choice < 0 || mode_choice > 4) {
+    if (mode_choice < 0 || mode_choice > 5) {
         print_error("Mode choice out of range\n");
     } else {
         inst->mode = mode_choice;
