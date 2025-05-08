@@ -246,7 +246,7 @@ void add_sec(int* nnz, double* rhs, int comp_index, int* index, double* value, c
  */
 void solver(CPXENVptr env, CPXLPptr lp, instance *inst, double *xstar, int *succ, int *comp, int *ncomp, double *objval) {
 
-	if (inst->mode == 1 || inst->mode == 4) {
+	if (inst->mode == 1 || inst->mode == 4 || inst->mode == 5) {
 		warm_start(env, lp, succ, inst);
 	}
 
@@ -894,7 +894,7 @@ int TSPopt(instance *inst, int alg) {
 	int two_opt_flag = 0;
 	tour* solution = (tour *)malloc(sizeof(tour));
 	CPXLONG contextid = -1000;
-	if (inst->mode == 3) {
+	if (inst->mode == 3 || inst->mode == 5) {
 		contextid = CPX_CALLBACKCONTEXT_CANDIDATE | CPX_CALLBACKCONTEXT_RELAXATION;
 	} else{
 		contextid = CPX_CALLBACKCONTEXT_CANDIDATE;
