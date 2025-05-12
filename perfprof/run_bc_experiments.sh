@@ -6,7 +6,7 @@ EXECUTABLE="$BUILD_DIR/tsp"
 TIME_LIMIT=60 # seconds
 SEED=50
 NODES=300
-NUM_INSTANCES=25
+NUM_INSTANCES=10
 OUTPUT_FILE="results_bc.csv"
 
 # Check if the executable exists
@@ -16,7 +16,7 @@ if [ ! -f "$EXECUTABLE" ]; then
 fi
 
 # Create CSV header
-echo "5;regular;warm start;heuristic posting;fractional;warm start + posting" > $OUTPUT_FILE
+echo "7;regular;warm start;heuristic posting;fractional;warm start + posting;warm start + fractional;warm start + fractional + posting" > $OUTPUT_FILE
 
 # Generate and run instances
 for ((i=0; i<NUM_INSTANCES; i++)); do
@@ -39,8 +39,14 @@ for ((i=0; i<NUM_INSTANCES; i++)); do
     # Run Branch and cut with warm start and heuristic posting
     RESULT_WARM_START_POSTING=$($EXECUTABLE -time_limit $TIME_LIMIT -seed $((SEED + i)) -nodes $NODES -alg 6 -mode 4 | grep "Total execution time: " | awk '{print $4}')
 
+    # Run Branch and cut with warm start and fractional cuts
+    RESULT_WARM_START_FRACTIONAL=$($EXECUTABLE -time_limit $TIME_LIMIT -seed $((SEED + i)) -nodes $NODES -alg 6 -mode 5 | grep "Total execution time: " | awk '{print $4}')
+    
+    # Run Branch and cut with warm start, heuristic posting and fractional cuts
+    RESULT_COMPLETE=$($EXECUTABLE -time_limit $TIME_LIMIT -seed $((SEED + i)) -nodes $NODES -alg 6 -mode 6 | grep "Total execution time: " | awk '{print $4}')
+    
     # Save results
-    echo "inst${i};${RESULT_BC};${RESULT_WARM_START};${RESULT_POSTING};${RESULT_FRACTIONAL};${RESULT_WARM_START_POSTING}" >> $OUTPUT_FILE
+    echo "inst${i};${RESULT_BC};${RESULT_WARM_START};${RESULT_POSTING};${RESULT_FRACTIONAL};${RESULT_WARM_START_POSTING};${RESULT_WARM_START_FRACTIONAL};${RESULT_COMPLETE}" >> $OUTPUT_FILE
 
 done
 

@@ -228,7 +228,7 @@ void add_sec(int* nnz, double* rhs, int comp_index, int* index, double* value, c
  */
 void solver(CPXENVptr env, CPXLPptr lp, instance *inst, double *xstar, int *succ, int *comp, int *ncomp, double *objval) {
 
-	if (inst->mode == 1 || inst->mode == 4 || inst->mode == 5) {
+	if (inst->mode == 1 || inst->mode == 4 || inst->mode == 5 || inst->mode == 6) {
 		warm_start(env, lp, succ, inst);
 	}
 
@@ -512,7 +512,7 @@ int CPXPUBLIC candidate_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contexti
 			print_error("CPXgetcallbackinfo() error getting CANDIDATE_SOURCE");
 		}
 
-		if (inst->mode == 2 || inst->mode == 4) {
+		if (inst->mode == 2 || inst->mode == 4 || inst->mode == 6) {
 			post_heuristic_solution(context, inst, succ, ncomp, comp, incumbent);
 		}
 	}
@@ -876,7 +876,7 @@ int TSPopt(instance *inst, int alg) {
 	int two_opt_flag = 0;
 	tour* solution = (tour *)malloc(sizeof(tour));
 	CPXLONG contextid = -1000;
-	if (inst->mode == 3 || inst->mode == 5) {
+	if (inst->mode == 3 || inst->mode == 5 || inst->mode == 6) {
 		contextid = CPX_CALLBACKCONTEXT_CANDIDATE | CPX_CALLBACKCONTEXT_RELAXATION;
 	} else{
 		contextid = CPX_CALLBACKCONTEXT_CANDIDATE;

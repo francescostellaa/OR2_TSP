@@ -188,11 +188,25 @@ void parse_command_line(int argc, char** argv, instance *inst, parameters *param
         printf("-time_limit <value>      : Time limit for the algorithm (in seconds)\n");
         printf("-seed <value>            : Random seed for reproducibility\n");
         printf("-nodes <value>           : Number of nodes (if no input file is provided)\n");
-        printf("-alg <algorithm>         : Algorithm choice (1: GREEDY, 2: GREEDY+2OPT, 3: VNS, 4: TABU, 5: GRASP, 6: Branch & Cut, 7: Benders, 8: Hard-Fixing)\n");
+        printf("-alg <algorithm>         : Algorithm choice:\n \
+                                1) GREEDY,\n \
+                                2) GREEDY+2OPT,\n \
+                                3) VNS, \n \
+                                4) TABU, \n \
+                                5) GRASP, \n \
+                                6) Branch & Cut, \n \
+                                7) Benders, \n \
+                                8) Hard-Fixing)\n");
         printf("-num_kicks <value>       : Number of kicks for VNS (default: 3)\n");
         printf("-interval_tenure <value> : Interval tenure for Tabu Search (default: 75)\n");
         printf("-tenure_scaling <value>  : Tenure scaling for Tabu Search (default: 0.5)\n");
-        printf("-mode <value>            : Exact solvings optional modes (1: warm start, 2: posting heuristics, 3: fractional cuts, 4: warm start + posting heuristics)\n");
+        printf("-mode <value>            : Exact solvings optional modes:\n \
+                                1) warm start, \n \
+                                2) posting heuristics, \n \
+                                3) fractional cuts, \n \
+                                4) warm start + posting heuristics, \n \
+                                5) warm start + fractional cuts, \n \
+                                6) warm start + heuristic posting + fractional cuts\n");
         printf("-help or --help          : Display this help message\n");
         printf("----------------------------------------------------------------------------------------------\n\n");
         exit(0); 
@@ -213,7 +227,7 @@ void parse_command_line(int argc, char** argv, instance *inst, parameters *param
         printf("Algorithm choice: %d\n", *alg);
     }
 
-    if (mode_choice < 0 || mode_choice > 5) {
+    if (mode_choice < 0 || mode_choice > 6) {
         print_error("Mode choice out of range\n");
     } else {
         inst->mode = mode_choice;
