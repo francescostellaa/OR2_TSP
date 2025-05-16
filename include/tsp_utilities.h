@@ -50,6 +50,7 @@ typedef struct {
 
     double timelimit;
     double tstart;
+    double prob_hard_fixing;
 
     int mode;
 

@@ -135,6 +135,7 @@ void parse_command_line(int argc, char** argv, instance *inst, parameters *param
     inst->best_sol->cost = INF_COST;
     inst->ncols = -1;
     inst->mode = 0;
+    inst->prob_hard_fixing = 0.1;
 
     params->num_kicks = 3;
     params->interval_tenure = 75;
@@ -168,7 +169,7 @@ void parse_command_line(int argc, char** argv, instance *inst, parameters *param
             if (params->interval_tenure < 1) { print_error("Error: interval_tenure must be greater or equal than 0\n"); }
             continue; 
         }
-        if ( strcmp(argv[i],"-tenure_scaling") == 0 ) { 
+        if ( strcmp(argv[i],"-tenure_scaling") == 0 ) {
             params->tenure_scaling = atof(argv[++i]); 
             if (params->tenure_scaling < 0 || params->tenure_scaling > 1) { 
                 print_error("Error: tenure_scaling must be between 0 and 1\n"); 
@@ -176,6 +177,7 @@ void parse_command_line(int argc, char** argv, instance *inst, parameters *param
             continue; 
         }
 	    if ( strcmp(argv[i],"-mode") == 0 ) { mode_choice = atoi(argv[++i]); continue; }
+	    if ( strcmp(argv[i],"-prob_hard_fixing") == 0 ) {inst->prob_hard_fixing = atof(argv[++i]); continue;}
         if ( strcmp(argv[i],"-help") == 0 || strcmp(argv[i],"--help") == 0 ) { 
             help = 1; 
             break; 
@@ -206,7 +208,7 @@ void parse_command_line(int argc, char** argv, instance *inst, parameters *param
                                 3) fractional cuts, \n \
                                 4) warm start + posting heuristics, \n \
                                 5) warm start + fractional cuts, \n \
-                                6) warm start + heuristic posting + fractional cuts\n");
+                                6) warm start + heuristic posting + fractional cuts \n");
         printf("-help or --help          : Display this help message\n");
         printf("----------------------------------------------------------------------------------------------\n\n");
         exit(0); 
@@ -227,7 +229,7 @@ void parse_command_line(int argc, char** argv, instance *inst, parameters *param
         printf("Algorithm choice: %d\n", *alg);
     }
 
-    if (mode_choice < 0 || mode_choice > 6) {
+    if (mode_choice < 0 || mode_choice > 7) {
         print_error("Mode choice out of range\n");
     } else {
         inst->mode = mode_choice;

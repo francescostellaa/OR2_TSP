@@ -228,7 +228,7 @@ void add_sec(int* nnz, double* rhs, int comp_index, int* index, double* value, c
  */
 void solver(CPXENVptr env, CPXLPptr lp, instance *inst, double *xstar, int *succ, int *comp, int *ncomp, double *objval) {
 
-	if (inst->mode == 1 || inst->mode == 4 || inst->mode == 5 || inst->mode == 6) {
+	if (inst->mode == 1 || inst->mode == 4 || inst->mode == 5 || (inst->mode == 6)) {
 		warm_start(env, lp, succ, inst);
 	}
 
@@ -236,7 +236,6 @@ void solver(CPXENVptr env, CPXLPptr lp, instance *inst, double *xstar, int *succ
         print_error("CPXmipopt() error");
     }
 
-    int solstat = CPXgetstat(env, lp);
 
     if (CPXgetx(env, lp, xstar, 0, inst->ncols - 1)) {
         print_error("CPXgetx() error");
@@ -448,7 +447,7 @@ void post_heuristic_solution(CPXCALLBACKCONTEXTptr context, instance *inst, int 
  */
 int CPXPUBLIC candidate_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void *userhandle ) {
 	instance* inst = (instance*) userhandle;
-		
+
 	char sense = 'L';
 	int izero = 0;
 
