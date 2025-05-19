@@ -102,6 +102,12 @@ int main(int argc, char **argv) {
                 print_error("Error in Hard-Fixing\n");
             }
             break;
+        case 9:
+            if (VERBOSE >= 1) { printf("Running Local Branching...\n"); }
+            if (local_branching(&inst, &params)) {
+                print_error("Error in Local Branching\n");
+            }
+            break;
         default:
             printf("Invalid choice.\n");
             break;

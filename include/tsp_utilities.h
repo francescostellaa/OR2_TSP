@@ -64,6 +64,7 @@ typedef struct {
     int num_kicks;
     int interval_tenure;
     float tenure_scaling;
+    int k_neighborhood;
     
 } parameters;
 

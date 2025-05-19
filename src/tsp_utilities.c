@@ -135,11 +135,12 @@ void parse_command_line(int argc, char** argv, instance *inst, parameters *param
     inst->best_sol->cost = INF_COST;
     inst->ncols = -1;
     inst->mode = 0;
-    inst->prob_hard_fixing = 0.1;
+    inst->prob_hard_fixing = 0.5;
 
     params->num_kicks = 3;
     params->interval_tenure = 75;
     params->tenure_scaling = 0.5;
+    params->k_neighborhood = 30;
 
     int help = 0; if ( argc < 1 ) help = 1;// if no parameters, print help
     int node_flag = 1, number_nodes = 0;
@@ -178,6 +179,13 @@ void parse_command_line(int argc, char** argv, instance *inst, parameters *param
         }
 	    if ( strcmp(argv[i],"-mode") == 0 ) { mode_choice = atoi(argv[++i]); continue; }
 	    if ( strcmp(argv[i],"-prob_hard_fixing") == 0 ) {inst->prob_hard_fixing = atof(argv[++i]); continue;}
+        if ( strcmp(argv[i],"-k") == 0 ) { 
+            params->k_neighborhood = atoi(argv[++i]); 
+            if (params->k_neighborhood < 0 || params->k_neighborhood > inst->nnodes) {
+                 print_error("Error: k must be greater or equal than 0 and smaller than the number of nodes of the graph\n"); 
+            }
+            continue; 
+        }
         if ( strcmp(argv[i],"-help") == 0 || strcmp(argv[i],"--help") == 0 ) { 
             help = 1; 
             break; 
@@ -222,7 +230,7 @@ void parse_command_line(int argc, char** argv, instance *inst, parameters *param
         }
     }
 
-    if (alg_choice < 0 || alg_choice > 8) {
+    if (alg_choice < 0 || alg_choice > 9) {
         print_error("Algorithm choice not defined or out of range\n");
     } else {
         *alg = alg_choice;

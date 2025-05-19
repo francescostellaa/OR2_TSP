@@ -9,5 +9,7 @@
 
 double min(double a, double b);
 int hard_fixing(instance* inst);
+int local_branching(instance* inst, parameters* parameters);
+void initialize_cplex(instance* inst, CPXENVptr* env, CPXLPptr* lp);
 
 #endif //MATHEURISTICS_H
