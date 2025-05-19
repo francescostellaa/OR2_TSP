@@ -7,16 +7,11 @@
  * @param solution
  * @return zero on success, non-zero on failures
  */
-int grasp(int initial_point, const instance* inst, tour* solution) {
-    if (solution == NULL) {
-        print_error("Error in greedy\n");
-        return -1;
-    }
+int grasp(int initial_point, const instance* inst, tour* solution, double prob_grasp) {
 
-    if (solution->path == NULL) {
-        print_error("Error in greedy\n");
-        return -1;
-    }
+    //Check correct memory allocation
+    if (solution == NULL) { print_error("Error in Grasp\n"); }
+    if (solution->path == NULL) { print_error("Error in Grasp\n"); }
 
     // Initialize the solution with node indices
     for (int i = 0; i < inst->nnodes; i++) {
@@ -69,7 +64,9 @@ int grasp(int initial_point, const instance* inst, tour* solution) {
 
         // Decide whether to choose the nearest neighbor or a random alternative
         int selected_index;
-        if (rand() % 100 < 95 || min_costs[1] == INF_COST || min_costs[2] == INF_COST || min_costs[3] == INF_COST) {
+
+        //if (rand() % 100 < 95 || min_costs[1] == INF_COST || min_costs[2] == INF_COST || min_costs[3] == INF_COST) {
+        if (random01() > prob_grasp || min_costs[1] == INF_COST || min_costs[2] == INF_COST || min_costs[3] == INF_COST) {
             // 95% chance: choose the nearest neighbor
             selected_index = min_indices[0];
             solution->cost += min_costs[0];
@@ -106,7 +103,7 @@ int grasp(int initial_point, const instance* inst, tour* solution) {
  * @param timelimit
  * @return
  */
-int grasp_multi_start(instance* inst, double timelimit) {
+int grasp_multi_start(instance* inst, double timelimit, double prob_grasp) {
 
     if (inst == NULL) {
         print_error("Error in initialization of the instance\n");
@@ -140,9 +137,9 @@ int grasp_multi_start(instance* inst, double timelimit) {
             print_error("Error: Memory allocation failed for solution path\n");
             free(solution);
             return -1;
-        }
+        }//245654.511435
 
-        if (grasp(i, inst, solution) == 0) {
+        if (grasp(i, inst, solution, prob_grasp) == 0) {
             update_best_sol(inst, solution);
         }
         save_history_incumbent(inst->best_sol->cost, "../data/GRASP/incumbent_grasp.txt");

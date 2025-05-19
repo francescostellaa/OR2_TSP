@@ -140,6 +140,8 @@ void parse_command_line(int argc, char** argv, instance *inst, parameters *param
     params->num_kicks = 3;
     params->interval_tenure = 75;
     params->tenure_scaling = 0.5;
+    params->prob_grasp = 0.05;
+
     params->k_neighborhood = 30;
 
     int help = 0; if ( argc < 1 ) help = 1;// if no parameters, print help
@@ -177,6 +179,13 @@ void parse_command_line(int argc, char** argv, instance *inst, parameters *param
             }
             continue; 
         }
+	    if ( strcmp(argv[i],"-prob_grasp") == 0 ) {
+	        params->prob_grasp = atof(argv[++i]);
+	        if (params->prob_grasp < 0 || params->prob_grasp > 1) {
+	            print_error("Error: grasp probability must be between 0 and 1\n");
+	        }
+	        continue;
+	    }
 	    if ( strcmp(argv[i],"-mode") == 0 ) { mode_choice = atoi(argv[++i]); continue; }
 	    if ( strcmp(argv[i],"-prob_hard_fixing") == 0 ) {inst->prob_hard_fixing = atof(argv[++i]); continue;}
         if ( strcmp(argv[i],"-k") == 0 ) { 

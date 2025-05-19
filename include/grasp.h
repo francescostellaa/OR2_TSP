@@ -4,7 +4,7 @@
 #include <tsp_utilities.h>
 #include <k_opt.h>
 
-int grasp(int initial_point, const instance* inst, tour* solution);
-int grasp_multi_start(instance* inst, double timelimit);
+int grasp(int initial_point, const instance* inst, tour* solution, double prob_grasp);
+int grasp_multi_start(instance* inst, double timelimit, double prob_grasp);
 
 #endif //GRASP_H
