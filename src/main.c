@@ -80,7 +80,7 @@ int main(int argc, char **argv) {
             break;
         case 5:
             if (VERBOSE >= 1) { printf("Running Grasp Multi-Start...\n"); }
-            if (grasp_multi_start(&inst, inst.timelimit)) {
+            if (grasp_multi_start(&inst, inst.timelimit, params.prob_grasp)) {
                 print_error("Error in grasp_multi_start\n");
             }
             break;

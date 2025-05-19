@@ -36,7 +36,8 @@ class CmdLineParser(object):
 		self.parser.add_option("-L", "--logplot", dest="logplot", action="store_true", default=False, help="log scale for x")
 		self.parser.add_option("-T", "--timelimit", dest="timelimit", default=1e99, type=float, help="time limit for runs")
 		self.parser.add_option("-P", "--plot-title", dest="plottitle", default=None, help="plot title")
-		self.parser.add_option("-X", "--x-label", dest="xlabel", default='Time Ratio', help="x axis label")
+		#self.parser.add_option("-X", "--x-label", dest="xlabel", default='Time Ratio', help="x axis label")
+		self.parser.add_option("-X", "--x-label", dest="xlabel", default='Cost Ratio', help="x axis label")
 		self.parser.add_option("-B", "--bw", dest="bw", action="store_true", default=False, help="plot B/W")
 
 	def addOption(self, *args, **kwargs):
