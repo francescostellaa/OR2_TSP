@@ -10,6 +10,8 @@ data/*.pdf
 data/NN
 data/TABU
 data/VNS
+data/LOCALBRANCHING
+data/HARDFIXING
 perfprof/*.pdf
 perfprof/*.csv
 data/*.lp
