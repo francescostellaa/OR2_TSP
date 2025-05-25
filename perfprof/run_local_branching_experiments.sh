@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configurations
-BUILD_DIR="../build"
+BUILD_DIR="../cmake-build-debug"
 EXECUTABLE="$BUILD_DIR/tsp"
 TIME_LIMIT=180 # seconds
 SEED=50

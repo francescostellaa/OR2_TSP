@@ -240,6 +240,7 @@ void parse_command_line(int argc, char** argv, instance *inst, parameters *param
     }
 
     if (alg_choice < 0 || alg_choice > 9) {
+        printf("Here\n");
         print_error("Algorithm choice not defined or out of range\n");
     } else {
         *alg = alg_choice;
