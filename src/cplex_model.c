@@ -189,9 +189,6 @@ void add_sec(int* nnz, double* rhs, int comp_index, int* index, double* value, c
         print_error("comp array is NULL");
     }
 
-    int izero = 0;
-    char sense = 'L';
-
     if (cname == NULL) {
     	printf("HERE\n");
         print_error("Memory allocation error for cname");
