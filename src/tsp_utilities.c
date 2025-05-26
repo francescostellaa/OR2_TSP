@@ -227,7 +227,8 @@ void parse_command_line(int argc, char** argv, instance *inst, parameters *param
                                 7)  Benders, \n \
                                 8)  Hard-Fixing, \n \
                                 9)  Local Branching, \n \
-                                10) Genetic \n");
+                                10) Genetic, \n \
+                                11) Extra Mileage\n");
         printf("-num_kicks <value>       : Number of kicks for VNS (default: 3)\n");
         printf("-interval_tenure <value> : Interval tenure for Tabu Search (default: 75)\n");
         printf("-tenure_scaling <value>  : Tenure scaling for Tabu Search (default: 0.5)\n");
