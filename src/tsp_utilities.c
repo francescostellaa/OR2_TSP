@@ -141,7 +141,6 @@ void parse_command_line(int argc, char** argv, instance *inst, parameters *param
     params->interval_tenure = 75;
     params->tenure_scaling = 0.5;
     params->prob_grasp = 0.05;
-
     params->k_neighborhood = 30;
 
     int help = 0; if ( argc < 1 ) help = 1;// if no parameters, print help
@@ -190,8 +189,11 @@ void parse_command_line(int argc, char** argv, instance *inst, parameters *param
 	    if ( strcmp(argv[i],"-prob_hard_fixing") == 0 ) {inst->prob_hard_fixing = atof(argv[++i]); continue;}
         if ( strcmp(argv[i],"-k") == 0 ) { 
             params->k_neighborhood = atoi(argv[++i]); 
-            if (params->k_neighborhood < 0 || params->k_neighborhood > number_nodes) {
+            /*if (params->k_neighborhood < 0 || params->k_neighborhood > number_nodes) {
                  print_error("Error: k must be greater or equal than 0 and smaller than the number of nodes of the graph\n"); 
+            }*/
+            if (params->k_neighborhood < 0) {
+                print_error("Error: k must be greater or equal than 0\n");
             }
             continue; 
         }
@@ -215,7 +217,8 @@ void parse_command_line(int argc, char** argv, instance *inst, parameters *param
                                 5) GRASP, \n \
                                 6) Branch & Cut, \n \
                                 7) Benders, \n \
-                                8) Hard-Fixing)\n");
+                                8) Hard-Fixing, \n \
+                                9) Local Branching\n");
         printf("-num_kicks <value>       : Number of kicks for VNS (default: 3)\n");
         printf("-interval_tenure <value> : Interval tenure for Tabu Search (default: 75)\n");
         printf("-tenure_scaling <value>  : Tenure scaling for Tabu Search (default: 0.5)\n");

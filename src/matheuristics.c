@@ -26,7 +26,7 @@ void initialize_cplex(instance* inst, CPXENVptr* env, CPXLPptr* lp) {
     build_model(inst, *env, *lp);
     inst->ncols = CPXgetnumcols(*env, *lp);
 
-    if (CPXsetintparam(*env, CPX_PARAM_SCRIND, 0)) // Enable screen output
+    if (CPXsetintparam(*env, CPX_PARAM_SCRIND, 1)) // Enable screen output
         print_error("CPXsetintparam() error");
     if (CPXsetintparam(*env, CPX_PARAM_MIPDISPLAY, 2)) // Verbosity level
         print_error("CPXsetintparam() error");
@@ -112,8 +112,6 @@ int hard_fixing(instance* inst) {
         }
 
         // Set lower bounds of selected edges to 1.0
-        /*char* lu = calloc(cnt,inst->nnodes);
-        double* bd = calloc(cnt, sizeof(double));*/
         if (cnt == 0) {
             printf("No edges to fix\n");
             free(fixed_edges);
@@ -191,6 +189,10 @@ int hard_fixing(instance* inst) {
 }
 
 int local_branching(instance* inst, parameters* parameters) {
+
+    if (parameters->k_neighborhood > inst->nnodes) {
+        print_error("Error: k must be smaller than the number of nodes of the graph\n");
+    }
 
     tour* solution = malloc(sizeof(tour));
     solution->path = malloc((inst->nnodes + 1) * sizeof(int));
@@ -278,7 +280,7 @@ int local_branching(instance* inst, parameters* parameters) {
         }
         // Set the time limit to the resiual time
         double current_residual_time = inst->timelimit - (second() - inst->tstart);
-        if (CPXsetdblparam(env, CPX_PARAM_TILIM, current_residual_time))
+        if (CPXsetdblparam(env, CPX_PARAM_TILIM, min(current_residual_time, inst->timelimit * 0.1)))
             print_error("CPXsetdblparam() error");
 
         if (CPXmipopt(env, lp)) {
@@ -291,6 +293,33 @@ int local_branching(instance* inst, parameters* parameters) {
             char errormsg[CPXMESSAGEBUFSIZE];
             CPXgeterrorstring(env, error, errormsg);
             print_error(errormsg);
+        }
+
+        // Check if the solution is optimal or CPLEX reached the time limit to
+        // increase / decrease the neighborhood size
+        printf("Status %d\n",CPXgetstat(env, lp));
+        if (CPXgetstat(env, lp) == CPXMIP_OPTIMAL || CPXgetstat(env, lp) == CPXMIP_NODE_LIM_FEAS) {
+            printf("Increasing neighborhood size to %d\n", k + 1);
+            fflush(NULL);
+        }
+        else if (CPXgetstat(env, lp) == CPXMIP_TIME_LIM_FEAS) {
+            if (k > 1) {
+            printf("Decreasing neighborhood size to %d\n", k - 1);
+            fflush(NULL);
+             k--;
+            } else {
+                printf("No solution found, stopping local branching\n");
+                break;
+            }
+        } else {
+            if (k > 1) {
+            printf("No solution found, decreasing neighborhood size to %d\n", k - 1);
+            fflush(NULL);
+            k--;
+            } else {
+                printf("No solution found, stopping local branching\n");
+                break;
+            }
         }
 
         // Update the solution if the new objective value is better
