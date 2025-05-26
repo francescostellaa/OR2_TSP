@@ -38,7 +38,9 @@ add_executable(tsp
     src/cplex_model.c
     src/cplex_utilities.c
     src/mincut.c
-        src/matheuristics.c
+    src/matheuristics.c
+    src/genetic.c
+    src/extra_mileage.c
 )
 
 # target_link_libraries( ${PROJECT_NAME} ${OpenCV_LIBS} ${Boost_FILESYSTEM_LIBRARY})

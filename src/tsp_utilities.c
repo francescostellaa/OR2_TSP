@@ -141,6 +141,7 @@ void parse_command_line(int argc, char** argv, instance *inst, parameters *param
     params->interval_tenure = 75;
     params->tenure_scaling = 0.5;
     params->prob_grasp = 0.05;
+    params->population_size = 10;
 
     params->k_neighborhood = 30;
 
@@ -186,6 +187,13 @@ void parse_command_line(int argc, char** argv, instance *inst, parameters *param
 	        }
 	        continue;
 	    }
+        if ( strcmp(argv[i],"-pop_size") == 0 ) {
+	        params->population_size = atof(argv[++i]);
+	        if (params->population_size < 0) {
+	            print_error("Error: Population size must be larger than 1\n");
+	        }
+	        continue;
+	    }
 	    if ( strcmp(argv[i],"-mode") == 0 ) { mode_choice = atoi(argv[++i]); continue; }
 	    if ( strcmp(argv[i],"-prob_hard_fixing") == 0 ) {inst->prob_hard_fixing = atof(argv[++i]); continue;}
         if ( strcmp(argv[i],"-k") == 0 ) { 
@@ -208,14 +216,16 @@ void parse_command_line(int argc, char** argv, instance *inst, parameters *param
         printf("-seed <value>            : Random seed for reproducibility\n");
         printf("-nodes <value>           : Number of nodes (if no input file is provided)\n");
         printf("-alg <algorithm>         : Algorithm choice:\n \
-                                1) GREEDY,\n \
-                                2) GREEDY+2OPT,\n \
-                                3) VNS, \n \
-                                4) TABU, \n \
-                                5) GRASP, \n \
-                                6) Branch & Cut, \n \
-                                7) Benders, \n \
-                                8) Hard-Fixing)\n");
+                                1)  GREEDY,\n \
+                                2)  GREEDY+2OPT,\n \
+                                3)  VNS, \n \
+                                4)  TABU, \n \
+                                5)  GRASP, \n \
+                                6)  Branch & Cut, \n \
+                                7)  Benders, \n \
+                                8)  Hard-Fixing, \n \
+                                9)  Local Branching, \n \
+                                10) Genetic \n");
         printf("-num_kicks <value>       : Number of kicks for VNS (default: 3)\n");
         printf("-interval_tenure <value> : Interval tenure for Tabu Search (default: 75)\n");
         printf("-tenure_scaling <value>  : Tenure scaling for Tabu Search (default: 0.5)\n");
@@ -239,7 +249,7 @@ void parse_command_line(int argc, char** argv, instance *inst, parameters *param
         }
     }
 
-    if (alg_choice < 0 || alg_choice > 9) {
+    if (alg_choice < 0 || alg_choice > 11) {
         print_error("Algorithm choice not defined or out of range\n");
     } else {
         *alg = alg_choice;

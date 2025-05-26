@@ -66,6 +66,7 @@ typedef struct {
     float tenure_scaling;
     double prob_grasp;
     int k_neighborhood;
+    int population_size;
     
 } parameters;
 

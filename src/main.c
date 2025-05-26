@@ -5,6 +5,8 @@
 #include <grasp.h>
 #include <cplex_model.h>
 #include <matheuristics.h>
+#include <genetic.h>
+#include <extra_mileage.h>
 
 int main(int argc, char **argv) {
     if ( argc < 2 ) { printf("Wrong command line parameters\n"); exit(1); }       
@@ -106,6 +108,25 @@ int main(int argc, char **argv) {
             if (VERBOSE >= 1) { printf("Running Local Branching...\n"); }
             if (local_branching(&inst, &params)) {
                 print_error("Error in Local Branching\n");
+            }
+            break;
+        case 10:
+            if (VERBOSE >= 1) { printf("Running Genetic Algorithm...\n"); }
+            tour* solution_genetic = malloc(sizeof(tour));
+            solution_genetic->path = (int*)malloc((inst.nnodes + 1) * sizeof(int));
+            solution_genetic->cost = INF_COST;
+            if (genetic_algorithm(&inst, solution_genetic, params.population_size, inst.timelimit)) {
+                print_error("Error in vns\n");
+            }
+            update_best_sol(&inst, solution_genetic);
+            if(VERBOSE >= 1) { printf("Best cost: %lf\n", inst.best_sol->cost); }
+            free(solution_genetic->path);
+            free(solution_genetic);
+            break;
+        case 11:
+            if (VERBOSE >= 1) { printf("Running Extra Mileage...\n"); }
+            if (extra_mileage_multi_start(&inst, 1, inst.timelimit)) {
+                print_error("Error in extra mileage\n");
             }
             break;
         default:
