@@ -28,7 +28,7 @@ for ((i=0; i<NUM_INSTANCES; i++)); do
     echo -n "inst${i};" >> "$OUTPUT_FILE"
 
     for K in "${K_LIST[@]}"; do
-        CMD="$EXECUTABLE -time_limit $TIME_LIMIT -seed $((SEED + i)) -nodes $NODES -alg 9 -k $K"
+        CMD="$EXECUTABLE -time_limit $TIME_LIMIT -seed $((SEED + i)) -nodes $NODES -alg 9 -mode 6 -k $K"
         #echo "Running Local Branching with k = $K"
 
         RESULT=$($CMD 2>&1 | tee /dev/stderr | grep "Best cost" | awk '{print $3}')

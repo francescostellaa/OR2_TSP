@@ -510,6 +510,7 @@ int CPXPUBLIC candidate_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contexti
 
 		if (inst->mode == 2 || inst->mode == 4 || inst->mode == 6) {
 			post_heuristic_solution(context, inst, succ, ncomp, comp, incumbent);
+			//post_heuristic_solution(context, inst, succ, ncomp, comp, objval);
 		}
 	}
 
@@ -726,7 +727,6 @@ int branch_and_cut(CPXENVptr env, CPXLPptr lp, CPXLONG contextid, instance *inst
 		print_error("CPXcallbacksetfunc() error");
 
 	solver(env, lp, inst, xstar, succ, comp, &ncomp, &objval);
-
 	if (VERBOSE > 1000) {
 		printf("Lower Bound: %10.2lf, Number of components: %4d, Time: %5.2lfs\n", objval, ncomp, second()-inst->tstart);
 		fflush(NULL);
@@ -801,8 +801,7 @@ void patching_heuristic(int* succ, int ncomp, int* comp, instance* inst) {
 			}
 			comp[best_j] = comp[best_i];
 			ncomp--;
-        } 
-		else {
+        } else {
 			int temp = succ[best_i];
 			succ[best_i] = best_j;
 			int past_node = succ[best_j];

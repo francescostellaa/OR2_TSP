@@ -63,9 +63,7 @@ int tabu(const instance* inst, tour* solution, double timelimit, int interval_te
         }
 
         if (iteration % interval_tenure == 0) {
-            //tenure = (int)(sqrt(inst->nnodes) + rand() % (int)(inst->nnodes / sqrt(inst->nnodes) + 1));
             tenure = (int)MIN(sqrt(inst->nnodes) + rand() % (int)(tenure_scaling * inst->nnodes + 1), inst->nnodes);
-
         }
         iteration++;
         if (best_i != -1 && best_j != -1) {
