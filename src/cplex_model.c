@@ -565,6 +565,16 @@ int violated_cut_callback(double cut_val, int cut_nodes, int* cut, void* params)
 
 }
 
+/**
+ * Calculate the violation of a cut
+ * @param nnz
+ * @param rhs
+ * @param sense
+ * @param index
+ * @param value
+ * @param xstar
+ * @return
+ */
 double cut_violation(int nnz, double rhs, char sense, int* index, double* value, double* xstar) {
 	double cut_val = 0.0;
 	for (int i = 0; i < nnz; i++) {

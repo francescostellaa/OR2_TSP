@@ -1,6 +1,11 @@
 #include <genetic.h>
 
-
+/**
+ * Initialize the population for the genetic algorithm
+ * @param population array of tours representing the population
+ * @param pop_size size of the population
+ * @param inst instance containing the problem data
+ */
 void initialize_population(tour* population, int pop_size, instance* inst){
 
     int n = inst->nnodes;
@@ -27,14 +32,25 @@ void initialize_population(tour* population, int pop_size, instance* inst){
 
 }
 
-
+/**
+ * Select a tour from the population using tournament selection
+ * @param population array of tours representing the population
+ * @param pop_size size of the population
+ * @return pointer to the selected tour
+ */
 tour* tournament_selection(tour* population, int pop_size) {
     int a = rand() % pop_size;
     int b = rand() % pop_size;
     return (population[a].cost < population[b].cost) ? &population[a] : &population[b];
 }
 
-
+/**
+ * Perform crossover between two parent tours to create a child tour
+ * @param parent1 first parent tour
+ * @param parent2 second parent tour
+ * @param child resulting child tour
+ * @param n number of nodes in the tours
+ */
 void crossover(const int* parent1, const int* parent2, int* child, int n) {
     int start = rand() % n;
     int end = rand() % n;
@@ -68,7 +84,11 @@ void crossover(const int* parent1, const int* parent2, int* child, int n) {
 
 }
 
-
+/**
+ * Repair the solution by removing repeated nodes and adding missing nodes
+ * @param path array representing the tour path
+ * @param inst instance containing the problem data
+ */
 void repair_solution(int* path, const instance* inst) {
     
     int n = inst->nnodes;
@@ -127,7 +147,12 @@ void repair_solution(int* path, const instance* inst) {
 
 }
 
-
+/**
+ * Compare two tours based on their costs for sorting
+ * @param a pointer to the first tour
+ * @param b pointer to the second tour
+ * @return negative if a < b, positive if a > b, zero if equal
+ */
 int compare_tours(const void* a, const void* b) {
     const tour* t1 = (const tour*)a;
     const tour* t2 = (const tour*)b;
@@ -136,7 +161,11 @@ int compare_tours(const void* a, const void* b) {
     return 0;
 }
 
-
+/**
+ * Mutate a tour by swapping two random nodes (except the first and last nodes)
+ * @param path array representing the tour path
+ * @param n number of nodes in the tour
+ */
 void mutate(int* path, int n) {
     int i = 1 + rand() % (n - 1); 
     int j = 1 + rand() % (n - 1); 
@@ -149,7 +178,14 @@ void mutate(int* path, int n) {
     path[n] = path[0]; 
 }
 
-
+/**
+ * Genetic Algorithm to solve the TSP problem
+ * @param inst instance containing the problem data
+ * @param best_solution pointer to the best solution found
+ * @param pop_size size of the population
+ * @param timelimit time limit for the algorithm in seconds
+ * @return zero on success, non-zero on failures
+ */
 int genetic_algorithm(instance* inst, tour* best_solution, int pop_size, double timelimit) {
 
     tour* population = malloc(pop_size * sizeof(tour));

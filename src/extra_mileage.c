@@ -1,5 +1,13 @@
 #include <extra_mileage.h>
 
+/**
+ * This function implements the Extra Mileage algorithm for solving the TSP.
+ * It runs the algorithm multiple times starting from different nodes.
+ * @param inst instance with the nodes
+ * @param run_2opt flag to run the 2-opt refinement. If 1, the 2-opt refinement is applied
+ * @param timelimit time limit for the algorithm
+ * @return zero on success, non-zero on failures
+ */
 int extra_mileage_multi_start(instance* inst, int run_2opt, double timelimit) {
     
     if (inst == NULL) {
@@ -60,6 +68,15 @@ int extra_mileage_multi_start(instance* inst, int run_2opt, double timelimit) {
     return 0;
 }
 
+/**
+ * This function implements the Extra Mileage algorithm for solving the TSP.
+ * It starts from a given node and builds a tour by adding nodes that minimize the cost.
+ * @param start_node The starting node for the tour
+ * @param solution The tour to be constructed
+ * @param run_2opt Whether to run 2-opt optimization on the solution
+ * @param inst The instance containing the problem data
+ * @return 0 on success, -1 on failure
+ */
 int extra_mileage(int start_node, tour* solution, int run_2opt, instance* inst) {
 
     if (solution == NULL || solution->path == NULL) {

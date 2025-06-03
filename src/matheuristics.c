@@ -1,11 +1,18 @@
 #include <matheuristics.h>
 
+// Function to return the maximum of two doubles
 double min(double a, double b) {
     return (a < b) ? a : b;
 }
 
 #include <cplex.h>
 
+/**
+ * Initialize the CPLEX environment and build the model for the TSP instance
+ * @param inst instance containing the problem data
+ * @param env pointer to the CPLEX environment
+ * @param lp pointer to the CPLEX problem
+ */
 void initialize_cplex(instance* inst, CPXENVptr* env, CPXLPptr* lp) {
     int error = 0;
 
@@ -36,7 +43,11 @@ void initialize_cplex(instance* inst, CPXENVptr* env, CPXLPptr* lp) {
         print_error("CPXsetintparam() error");
 }
 
-
+/**
+ * This function implements the hard-fixing matheuristic for solving the TSP problem.
+ * @param inst instance containing the problem data
+ * @return zero on success, non-zero on failures
+ */
 int hard_fixing(instance* inst) {
 
     if (inst->prob_hard_fixing < 0.2 || inst->prob_hard_fixing > 0.8) { print_error("Fixing probability cannot be greater than 0.8 or less than 0.2!\n"); }
@@ -191,6 +202,12 @@ int hard_fixing(instance* inst) {
     return 0;
 }
 
+/**
+ * This function implements the local branching matheuristic for solving the TSP problem.
+ * @param inst instance containing the problem data
+ * @param parameters parameters for the local branching algorithm
+ * @return zero on success, non-zero on failures
+ */
 int local_branching(instance* inst, parameters* parameters) {
 
     if (parameters->k_neighborhood > inst->nnodes) {

@@ -100,6 +100,12 @@ void plot_succ_path(const int *succ, instance *inst, const char *output_file) {
     pclose(gnuplot);
 }
 
+/**
+ * Convert a solution obtained from a heuristic to a successor array
+ * @param succ
+ * @param solution
+ * @param inst
+ */
 void from_solution_to_succ(int* succ, tour* solution, const instance* inst) {
 
 	if (solution == NULL) {
@@ -119,11 +125,6 @@ void from_solution_to_succ(int* succ, tour* solution, const instance* inst) {
 		succ[solution->path[i]] = solution->path[i + 1];
     }
 
-	/*do {
-		succ[current] = solution->path[current + 1];
-		//current = succ[current];
-		current = solution->path[current + 1];
-	} while (current != start);*/
 }
 
 /**
@@ -153,6 +154,11 @@ void reconstruct_sol(tour* solution, int* succ, const instance* inst) {
 	compute_solution_cost(solution, inst);
 }
 
+/**
+ * Check the degrees of the nodes in the solution
+ * @param inst
+ * @param xstar
+ */
 void check_degrees(instance* inst, const double* xstar) {
 	if (inst == NULL) {
 		print_error("inst is NULL");
@@ -181,6 +187,14 @@ void check_degrees(instance* inst, const double* xstar) {
 	free(degree);
 }
 
+/**
+ * Compute the delta cost for a straight patching operation
+ * @param i First node index
+ * @param j Second node index
+ * @param succ Successor array
+ * @param inst Instance containing the cost matrix
+ * @return The computed delta cost for the straight patching operation
+ */
 double compute_delta_straight(int i, int j, int* succ, instance* inst) {
 
 	double delta_straight = inst->cost_matrix[i * inst->nnodes + j] +
@@ -190,6 +204,14 @@ double compute_delta_straight(int i, int j, int* succ, instance* inst) {
 	return delta_straight;
 }
 
+/**
+ * Compute the delta cost for a cross patching operation
+ * @param i First node index
+ * @param j Second node index
+ * @param succ Successor array
+ * @param inst Instance containing the cost matrix
+ * @return The computed delta cost for the cross patching operation
+ */
 double compute_delta_cross(int i, int j, int* succ, instance* inst) {
 
 	double delta_cross = inst->cost_matrix[i * inst->nnodes + succ[j]] +

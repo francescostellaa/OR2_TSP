@@ -1,5 +1,14 @@
 #include "tabu.h"
 
+/**
+ * Implement the Tabu Search algorithm
+ * @param inst instance containing the problem data
+ * @param solution current solution to be improved
+ * @param timelimit time limit for the algorithm
+ * @param interval_tenure interval for updating the tenure
+ * @param tenure_scaling scaling factor for the tenure
+ * @return zero on success, non-zero on failures
+ */
 int tabu(const instance* inst, tour* solution, double timelimit, int interval_tenure, float tenure_scaling) {
 
     if (inst->best_sol->path == NULL) {
