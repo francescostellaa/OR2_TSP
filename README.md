@@ -35,3 +35,5 @@ Otherwise, if we want to use artificial data randomly generated, use the followi
 
 If both -file and -nodes flag are used, it considers input file data.
 
+To see the list of all available algorithms and modes, use the following command line:
+```./tsp -help```
