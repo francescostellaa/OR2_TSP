@@ -16,7 +16,7 @@ if [ ! -f "$EXECUTABLE" ]; then
 fi
 
 # Create CSV header
-echo "2;VNS;Hard fixing" > $OUTPUT_FILE
+echo "3;VNS;Hard fixing; Local Branching" > $OUTPUT_FILE
 
 # Generate and run instances
 for ((i=0; i<NUM_INSTANCES; i++)); do
@@ -28,10 +28,12 @@ for ((i=0; i<NUM_INSTANCES; i++)); do
     RESULT_VNS=$($EXECUTABLE -time_limit $TIME_LIMIT -seed $((SEED + i)) -nodes $NODES -alg 3 | grep "Best cost" | awk '{print $3}')
 
     # Run Tabu algorithm
-    RESULT_HARD_FIXING=$($EXECUTABLE -time_limit $TIME_LIMIT -seed $((SEED + i)) -nodes $NODES -alg 8 -mode 6 -prob_hard_fixing 0.5| grep "Best cost" | awk '{print $3}')
+    RESULT_HARD_FIXING=$($EXECUTABLE -time_limit $TIME_LIMIT -seed $((SEED + i)) -nodes $NODES -alg 8 -mode 6 -prob_hard_fixing 0.7| grep "Best cost" | awk '{print $3}')
+
+    RESULT_LOCAL_BRANCHING=$($EXECUTABLE -time_limit $TIME_LIMIT -seed $((SEED + i)) -nodes $NODES -alg 8 -mode 6 -k 10| grep "Best cost" | awk '{print $3}')
 
     # Save results
-    echo "inst${i};${RESULT_VNS};${RESULT_HARD_FIXING}" >> $OUTPUT_FILE
+    echo "inst${i};${RESULT_VNS};${RESULT_HARD_FIXING};${RESULT_LOCAL_BRANCHING}" >> $OUTPUT_FILE
 
 done
 

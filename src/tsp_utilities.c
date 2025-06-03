@@ -140,7 +140,7 @@ void parse_command_line(int argc, char** argv, instance *inst, parameters *param
     params->num_kicks = 3;
     params->interval_tenure = 75;
     params->tenure_scaling = 0.5;
-    params->prob_grasp = 0.05;
+    params->prob_grasp = 0.01;
     params->population_size = 10;
     params->k_neighborhood = 20;
 

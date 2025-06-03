@@ -26,7 +26,7 @@ void initialize_cplex(instance* inst, CPXENVptr* env, CPXLPptr* lp) {
     build_model(inst, *env, *lp);
     inst->ncols = CPXgetnumcols(*env, *lp);
 
-    if (CPXsetintparam(*env, CPX_PARAM_SCRIND, 1)) // Enable screen output
+    if (CPXsetintparam(*env, CPX_PARAM_SCRIND, 0)) // Enable screen output
         print_error("CPXsetintparam() error");
     if (CPXsetintparam(*env, CPX_PARAM_MIPDISPLAY, 2)) // Verbosity level
         print_error("CPXsetintparam() error");
@@ -182,6 +182,9 @@ int hard_fixing(instance* inst) {
     free(xstar);
     free(solution->path);
     free(solution);
+    // Free and close CPLEX model
+    CPXfreeprob(env, &lp);
+    CPXcloseCPLEX(&env);
 
     plot_history_cost("../data/HARDFIXING/cost_hard_fixing.txt", "../data/HARDFIXING/hard_fixing.png");
 
@@ -259,8 +262,12 @@ int local_branching(instance* inst, parameters* parameters) {
         char sense = 'G';
         double rhs = (double) (inst->nnodes - k);   
         int nnz = 0;
-        int* index = malloc(inst->nnodes * sizeof(int));
-		double* value = malloc(inst->nnodes * sizeof(double));
+        /*int* index = malloc(inst->nnodes * sizeof(int));
+		double* value = malloc(inst->nnodes * sizeof(double));*/
+        int max_edges = (inst->nnodes * (inst->nnodes - 1)) / 2;
+        int* index = malloc(max_edges * sizeof(int));
+        double* value = malloc(max_edges * sizeof(double));
+
 		if (index == NULL || value == NULL) {
 			print_error("Memory allocation error");
 		}
@@ -300,6 +307,7 @@ int local_branching(instance* inst, parameters* parameters) {
         printf("Status %d\n",CPXgetstat(env, lp));
         if (CPXgetstat(env, lp) == CPXMIP_OPTIMAL || CPXgetstat(env, lp) == CPXMIP_NODE_LIM_FEAS) {
             printf("Increasing neighborhood size to %d\n", k + 1);
+            k++;
             fflush(NULL);
             k++;
         }
@@ -362,6 +370,9 @@ int local_branching(instance* inst, parameters* parameters) {
     free(xstar);
     free(solution->path);
     free(solution);
+    // Free and close CPLEX model
+    CPXfreeprob(env, &lp);
+    CPXcloseCPLEX(&env);
 
     plot_history_cost("../data/LOCALBRANCHING/cost_local_branching.txt", "../data/LOCALBRANCHING/local_branching.png");
     
