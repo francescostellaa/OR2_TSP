@@ -142,7 +142,7 @@ void parse_command_line(int argc, char** argv, instance *inst, parameters *param
     params->tenure_scaling = 0.5;
     params->prob_grasp = 0.05;
     params->population_size = 10;
-    params->k_neighborhood = 30;
+    params->k_neighborhood = 20;
 
     int help = 0; if ( argc < 1 ) help = 1;// if no parameters, print help
     int node_flag = 1, number_nodes = 0;

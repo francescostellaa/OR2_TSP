@@ -6,7 +6,7 @@ EXECUTABLE="$BUILD_DIR/tsp"
 TIME_LIMIT=60 # seconds
 SEED=50
 NODES=300
-NUM_INSTANCES=10
+NUM_INSTANCES=50
 OUTPUT_FILE="results_bc.csv"
 
 # Check if the executable exists

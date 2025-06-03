@@ -190,7 +190,6 @@ void add_sec(int* nnz, double* rhs, int comp_index, int* index, double* value, c
     }
 
     if (cname == NULL) {
-    	printf("HERE\n");
         print_error("Memory allocation error for cname");
     }
 	if (cname[0] == NULL) {

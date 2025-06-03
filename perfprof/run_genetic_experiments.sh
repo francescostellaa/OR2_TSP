@@ -4,11 +4,11 @@
 BUILD_DIR="../build"  
 EXECUTABLE="$BUILD_DIR/tsp"
 TIME_LIMIT=60 # seconds
-SEED=0
+SEED=25
 NODES=1000
 POP_SIZE_LIST=(10 25 50 100)  
-NUM_INSTANCES=25
-OUTPUT_FILE="results_genetic.csv"
+NUM_INSTANCES=50
+OUTPUT_FILE="results_genetic_1.csv"
 
 # Check if the executable exists
 if [ ! -f "$EXECUTABLE" ]; then
@@ -24,7 +24,7 @@ done
 echo "" >> $OUTPUT_FILE
 
 # Generate and run instances
-for ((i=0; i<NUM_INSTANCES; i++)); do
+for ((i=25; i<NUM_INSTANCES; i++)); do
     INSTANCE_FILE="instance_${i}.tsp"
 
     # Run VNS for each num_kicks value

@@ -2,14 +2,14 @@
 
 # Configurations
 #BUILD_DIR="../build"
-BUILD_DIR="../cmake-build-debug"
+BUILD_DIR="../build"
 EXECUTABLE="$BUILD_DIR/tsp"
 TIME_LIMIT=180 # seconds
 SEED=50
 NODES=1000
-NUM_INSTANCES=10
-PROB_LIST=(0.6 0.7 0.8)
-OUTPUT_FILE="results_hard_fixing_high_prob.csv"
+NUM_INSTANCES=25
+PROB_LIST=(0.3 0.5 0.7)
+OUTPUT_FILE="results_hard_fixing.csv"
 
 # Check if the executable exists and is executable
 if [ ! -x "$EXECUTABLE" ]; then
@@ -18,7 +18,7 @@ if [ ! -x "$EXECUTABLE" ]; then
 fi
 
 # Create CSV header
-echo "3;Hard fixing 0.6;Hard fixing 0.7;Hard fixing 0.8" > "$OUTPUT_FILE"
+echo "3;Hard fixing 0.3;Hard fixing 0.5;Hard fixing 0.7" > "$OUTPUT_FILE"
 
 # Generate and run instances
 for ((i=0; i<NUM_INSTANCES; i++)); do

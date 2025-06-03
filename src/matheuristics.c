@@ -301,23 +301,28 @@ int local_branching(instance* inst, parameters* parameters) {
         if (CPXgetstat(env, lp) == CPXMIP_OPTIMAL || CPXgetstat(env, lp) == CPXMIP_NODE_LIM_FEAS) {
             printf("Increasing neighborhood size to %d\n", k + 1);
             fflush(NULL);
+            k++;
         }
         else if (CPXgetstat(env, lp) == CPXMIP_TIME_LIM_FEAS) {
             if (k > 1) {
-            printf("Decreasing neighborhood size to %d\n", k - 1);
-            fflush(NULL);
-             k--;
+                printf("Decreasing neighborhood size to %d\n", k - 1);
+                fflush(NULL);
+                k--;
             } else {
                 printf("No solution found, stopping local branching\n");
+                free(value);
+                free(index);
                 break;
             }
         } else {
             if (k > 1) {
-            printf("No solution found, decreasing neighborhood size to %d\n", k - 1);
-            fflush(NULL);
-            k--;
+                printf("No solution found, decreasing neighborhood size to %d\n", k - 1);
+                fflush(NULL);
+                k--;
             } else {
                 printf("No solution found, stopping local branching\n");
+                free(value);
+                free(index);
                 break;
             }
         }
