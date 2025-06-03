@@ -135,7 +135,7 @@ void parse_command_line(int argc, char** argv, instance *inst, parameters *param
     inst->best_sol->cost = INF_COST;
     inst->ncols = -1;
     inst->mode = 0;
-    inst->prob_hard_fixing = 0.5;
+    inst->prob_hard_fixing = 0.7;
 
     params->num_kicks = 3;
     params->interval_tenure = 75;
