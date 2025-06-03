@@ -3,11 +3,7 @@
 ## Project Structure
 ```
 OR2_TSP/ 
-│-- data/ # Directory for dataset files 
-│ │-- GRASP/ # Output data from the GRASP approach
-│ │-- NN/ # Output data from the Neural Network approach 
-│ │-- TABU/ # Output data from the Tabu approach
-│ │-- VNS/ # Output data from the Variable Neighborhood Search approach 
+│-- data/ # Directory for dataset files  
 │-- include/ # Header files 
 │-- src/ # Source code files 
 │-- build/ # Build directory (created during compilation) 
@@ -18,6 +14,8 @@ OR2_TSP/
 
 ## Requirements
 * [Gnuplot](http://www.gnuplot.info/):  a portable command-line driven graphing utility
+* [Concorde](https://www.math.uwaterloo.ca/tsp/concorde/index.html): TSP solver
+* [IBM ILOG CPLEX](https://www.ibm.com/products/ilog-cplex-optimization-studio): IBM CPLEX Optimizer
 
 ## Installation
 * Clone the repository: `git clone https://github.com/francescostellaa/OR2_TSP.git`
