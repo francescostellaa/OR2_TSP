@@ -113,12 +113,11 @@ void read_input(instance *inst) {
 
 /**
  * Command line parser
- * @param argc
- * @param argv
- * @param inst
- * @param params
- * @param alg
- * @param mode
+ * @param argc number of arguments
+ * @param argv array of arguments
+ * @param inst instance to be filled with parameters
+ * @param params parameters to be filled with algorithm parameters
+ * @param alg algorithm choice
  */
 void parse_command_line(int argc, char** argv, instance *inst, parameters *params, int *alg) {
 	
@@ -135,7 +134,6 @@ void parse_command_line(int argc, char** argv, instance *inst, parameters *param
     inst->best_sol->cost = INF_COST;
     inst->ncols = -1;
     inst->mode = 0;
-    inst->prob_hard_fixing = 0.7;
 
     params->num_kicks = 3;
     params->interval_tenure = 75;
@@ -143,6 +141,7 @@ void parse_command_line(int argc, char** argv, instance *inst, parameters *param
     params->prob_grasp = 0.01;
     params->population_size = 10;
     params->k_neighborhood = 20;
+    params->prob_hard_fixing = 0.7;
 
     int help = 0; if ( argc < 1 ) help = 1;// if no parameters, print help
     int node_flag = 1, number_nodes = 0;
@@ -194,12 +193,9 @@ void parse_command_line(int argc, char** argv, instance *inst, parameters *param
 	        continue;
 	    }
 	    if ( strcmp(argv[i],"-mode") == 0 ) { mode_choice = atoi(argv[++i]); continue; }
-	    if ( strcmp(argv[i],"-prob_hard_fixing") == 0 ) {inst->prob_hard_fixing = atof(argv[++i]); continue;}
+	    if ( strcmp(argv[i],"-prob_hard_fixing") == 0 ) {params->prob_hard_fixing  = atof(argv[++i]); continue;}
         if ( strcmp(argv[i],"-k") == 0 ) { 
-            params->k_neighborhood = atoi(argv[++i]); 
-            /*if (params->k_neighborhood < 0 || params->k_neighborhood > number_nodes) {
-                 print_error("Error: k must be greater or equal than 0 and smaller than the number of nodes of the graph\n"); 
-            }*/
+            params->k_neighborhood = atoi(argv[++i]);
             if (params->k_neighborhood < 0) {
                 print_error("Error: k must be greater or equal than 0\n");
             }

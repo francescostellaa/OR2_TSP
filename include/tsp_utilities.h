@@ -67,6 +67,7 @@ typedef struct {
     double prob_grasp;
     int k_neighborhood;
     int population_size;
+    double prob_hard_fixing;
     
 } parameters;
 

@@ -51,17 +51,17 @@ int extra_mileage_multi_start(instance* inst, int run_2opt, double timelimit) {
             update_best_sol(inst, solution);
         }
         
-        save_history_cost(solution->cost, "../data/NN/cost_extra_mileage.txt");
-        save_history_incumbent(inst->best_sol->cost, "../data/NN/incumbent_extra_mileage.txt");
+        save_history_cost(solution->cost, "../data/cost_extra_mileage.txt");
+        save_history_incumbent(inst->best_sol->cost, "../data/incumbent_extra_mileage.txt");
         
         free(solution->path);
         free(solution);
     }
 
     plot_solution(inst, inst->best_sol->path);
-    plot_incumbent("../data/NN/incumbent_extra_mileage.txt", "../data/NN/incumbent_extra_mileage.png");
-    plot_history_cost("../data/NN/cost_extra_mileage.txt", "../data/NN/cost_extra_mileage.png");
-    plot_incumbent_and_costs("../data/NN/cost_extra_mileage.txt", "../data/NN/incumbent_extra_mileage.txt", "../data/NN/incumbent_and_costs_extra_mileage.png");
+    plot_incumbent("../data/incumbent_extra_mileage.txt", "../data/incumbent_extra_mileage.png");
+    plot_history_cost("../data/cost_extra_mileage.txt", "../data/cost_extra_mileage.png");
+    plot_incumbent_and_costs("../data/cost_extra_mileage.txt", "../data/incumbent_extra_mileage.txt", "../data/incumbent_and_costs_extra_mileage.png");
 
     if(VERBOSE >= 1) { printf("Best cost: %lf\n", inst->best_sol->cost); }
 

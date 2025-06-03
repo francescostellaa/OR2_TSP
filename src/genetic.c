@@ -250,7 +250,7 @@ int genetic_algorithm(instance* inst, tour* best_solution, int pop_size, double 
             if (new_population[i].cost < best_solution->cost - EPS_COST) {
                 memcpy(best_solution->path, new_population[i].path, (inst->nnodes + 1) * sizeof(int));
                 best_solution->cost = new_population[i].cost;
-                save_history_incumbent(best_solution->cost, "../data/GENETIC/history_incumbent.txt");
+                save_history_incumbent(best_solution->cost, "../data/history_incumbent.txt");
             }
             
         }
@@ -268,7 +268,7 @@ int genetic_algorithm(instance* inst, tour* best_solution, int pop_size, double 
     }
     free(population);
 
-    plot_history_cost("../data/GENETIC/history_incumbent.txt", "../data/GENETIC/history_incumbent.png");
+    plot_history_cost("../data/history_incumbent.txt", "../data/history_incumbent.png");
 
     return 0;
 

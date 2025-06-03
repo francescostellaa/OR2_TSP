@@ -9,11 +9,11 @@
 
 /**
  * Build the solution from the output of cplex model
- * @param xstar
- * @param inst
- * @param succ
- * @param comp
- * @param ncomp
+ * @param xstar solution vector from cplex
+ * @param inst instance containing the problem data
+ * @param succ successor array to be filled
+ * @param comp component array to be filled
+ * @param ncomp number of components found in the solution
  */
 void build_sol(const double *xstar, instance *inst, int *succ, int *comp, int *ncomp) {
 	// Check for NULL pointers
@@ -93,7 +93,7 @@ void build_sol(const double *xstar, instance *inst, int *succ, int *comp, int *n
  * Maps the pair (i,j) to a single index in the cost matrix
  * @param i
  * @param j
- * @param inst
+ * @param inst instance containing the problem data
  * @return
  */
 int xpos(int i, int j, instance *inst) {
@@ -105,9 +105,9 @@ int xpos(int i, int j, instance *inst) {
 
 /**
  * Build cplex model for TSP problem
- * @param inst
- * @param env
- * @param lp
+ * @param inst instance containing the problem data
+ * @param env CPLEX environment pointer
+ * @param lp CPLEX LP pointer
  */
 void build_model(instance *inst, CPXENVptr env, CPXLPptr lp) {
     int izero = 0;
@@ -175,27 +175,21 @@ void build_model(instance *inst, CPXENVptr env, CPXLPptr lp) {
 
 /**
  * Add a subtour elimination constraint (SEC) to the model
- * @param nnz
- * @param rhs
- * @param comp_index
- * @param index
- * @param value
- * @param cname
- * @param comp
- * @param inst
+ * @param nnz number of non-zero entries in the constraint
+ * @param rhs right-hand side value of the constraint
+ * @param comp_index index of the component for which the SEC is being added
+ * @param index array to hold the indices of the variables in the constraint
+ * @param value array to hold the coefficients of the variables in the constraint
+ * @param cname array to hold the name of the constraint
+ * @param comp component array indicating the component each node belongs to
+ * @param inst instance containing the problem data
  */
 void add_sec(int* nnz, double* rhs, int comp_index, int* index, double* value, char** cname, int *comp, instance *inst) {
-    if (comp == NULL) {
-        print_error("comp array is NULL");
-    }
-
-    if (cname == NULL) {
-        print_error("Memory allocation error for cname");
-    }
+    if (comp == NULL) {print_error("comp array is NULL");}
+    if (cname == NULL) {print_error("Memory allocation error for cname");}
 	if (cname[0] == NULL) {
 		print_error("Memory allocation error for cname[0]");
 	}
-
     for (int i = 0; i < inst->nnodes; i++) {
         if (comp[i] != comp_index) { continue; }
         *rhs += 1.0;
@@ -208,19 +202,18 @@ void add_sec(int* nnz, double* rhs, int comp_index, int* index, double* value, c
             sprintf(cname[0], "SEC(%d)", comp_index);
         }
     }
-
 }
 
 /**
  * Solve the model using CPLEX
- * @param env
- * @param lp
- * @param inst
- * @param xstar
- * @param succ
- * @param comp
- * @param ncomp
- * @param objval
+ * @param env CPLEX environment pointer
+ * @param lp CPLEX LP pointer
+ * @param inst instance containing the problem data
+ * @param xstar solution vector to be filled
+ * @param succ successor array to be filled
+ * @param comp component array to be filled
+ * @param ncomp number of components found in the solution
+ * @param objval pointer to store the objective value of the solution
  */
 void solver(CPXENVptr env, CPXLPptr lp, instance *inst, double *xstar, int *succ, int *comp, int *ncomp, double *objval) {
 
@@ -231,12 +224,11 @@ void solver(CPXENVptr env, CPXLPptr lp, instance *inst, double *xstar, int *succ
 	if (CPXmipopt(env, lp)) {
         print_error("CPXmipopt() error");
     }
-
-
+	// Retrive CPLEX solution
     if (CPXgetx(env, lp, xstar, 0, inst->ncols - 1)) {
         print_error("CPXgetx() error");
     }
-
+	// Build solution from xstar
     build_sol(xstar, inst, succ, comp, ncomp);
 
     if (CPXgetobjval(env, lp, objval)) {
@@ -248,9 +240,9 @@ void solver(CPXENVptr env, CPXLPptr lp, instance *inst, double *xstar, int *succ
 
 /**
  * Warm start the solution
- * @param succ
- * @param inst
- * @return
+ * @param succ successor array to be filled with the initial solution
+ * @param inst instance containing the problem data
+ * @return 0 on success, non-zero on failure
  */
 int warm_start(CPXENVptr env, CPXLPptr lp, int* succ, instance *inst) {
 	tour* solution = malloc(sizeof(tour));
@@ -258,13 +250,12 @@ int warm_start(CPXENVptr env, CPXLPptr lp, int* succ, instance *inst) {
 	solution->cost = 0.0;
 
 	if (greedy(0, solution, 1, inst)) { print_error("Error during heuristic\n");}
-	//vns(inst, solution, inst->timelimit * 0.01, 3);
 	if (VERBOSE > 1000) {
 		printf("Initial solution cost: %lf\n found after %5.2lf second\n", solution->cost, second() - inst->tstart);
 		fflush(NULL);
 	}
+	// Build the successors array from the solution to suit CPLEX requirements
 	from_solution_to_succ(succ, solution, inst);
-
 	double *xheu = calloc(inst->ncols, sizeof(double));  // all zeros, initially
 	for ( int i = 0; i < inst->nnodes; i++ ) xheu[xpos(i,succ[i],inst)] = 1.0;
 	int *ind = malloc(inst->ncols * sizeof(int));
@@ -272,10 +263,12 @@ int warm_start(CPXENVptr env, CPXLPptr lp, int* succ, instance *inst) {
 
 	int effortlevel = CPX_MIPSTART_NOCHECK;
 	int beg = 0;
+	// Set the mipstart solution in CPLEX
 	if ( CPXaddmipstarts(env, lp, 1, inst->ncols, &beg, ind, xheu, &effortlevel, NULL)) {
 		print_error("CPXaddmipstarts() error");
 	}
 
+	// free allocated memory
 	free(ind);
 	free(xheu);
 	free(solution->path);
@@ -285,13 +278,13 @@ int warm_start(CPXENVptr env, CPXLPptr lp, int* succ, instance *inst) {
 
 /**
  * Berder's loop algorithm
- * @param env
- * @param lp
- * @param inst
- * @param succ
- * @param ncomp
- * @param solution
- * @return
+ * @param env CPLEX environment pointer
+ * @param lp CPLEX LP pointer
+ * @param inst instance containing the problem data
+ * @param succ successor array to be filled
+ * @param ncomp number of components found in the solution
+ * @param solution tour structure to store the solution
+ * @return 0 on success, non-zero on failure
  */
 int benders(CPXENVptr env, CPXLPptr lp, instance *inst, int *succ, int ncomp, tour* solution) {
 
@@ -313,14 +306,14 @@ int benders(CPXENVptr env, CPXLPptr lp, instance *inst, int *succ, int ncomp, to
 		// apply to cplex the residual time left to solve the problem
 		double residual_time = inst->timelimit - (second() - inst->tstart); // The residual time limit that is left
 		CPXsetdblparam(env, CPX_PARAM_TILIM, residual_time);
-
+		// Solve the model
 		solver(env, lp, inst, xstar, succ, comp, &ncomp, &objval);
 		
 		if (VERBOSE > 1000) {
 			printf("Iter %4d, Lower Bound: %10.2lf, Number of components: %4d, Time: %5.2lfs\n", iter, objval, ncomp, second()-inst->tstart);
 			fflush(NULL);
 		}
-
+		// If number of components is greater than one, add SEC constraints
 		if (ncomp >= 2) {
 			for (int k = 1; k <= ncomp; k++) {
 
@@ -350,7 +343,7 @@ int benders(CPXENVptr env, CPXLPptr lp, instance *inst, int *succ, int ncomp, to
 				free(index);
 			}
 		}
-
+		// Use patching heuristic to have a feasible solution
 		if (ncomp >= 2) {
 			patching_heuristic(succ, ncomp, comp, inst);
 			reconstruct_sol(solution, succ, inst);
@@ -380,11 +373,11 @@ int benders(CPXENVptr env, CPXLPptr lp, instance *inst, int *succ, int ncomp, to
 
 /**
  * Post a heuristic solution to CPLEX
- * @param context
- * @param inst
- * @param succ
- * @param ncomp
- * @param comp
+ * @param context CPLEX callback context pointer
+ * @param inst instance containing the problem data
+ * @param succ array containing the successors of each node in the solution
+ * @param ncomp number of components in the solution
+ * @param comp component array indicating the component each node belongs to
  */
 void post_heuristic_solution(CPXCALLBACKCONTEXTptr context, instance *inst, int *succ, int ncomp, int *comp, double incumbent) {
     if (VERBOSE > 10000) {
@@ -395,12 +388,11 @@ void post_heuristic_solution(CPXCALLBACKCONTEXTptr context, instance *inst, int 
 
 	tour* heuristic_solution = malloc(sizeof(tour));
     reconstruct_sol(heuristic_solution, succ, inst);
-	// plot_solution(inst,heuristic_solution->path);
     two_opt(heuristic_solution, inst);
-
+	// Check if the heuristic solution is better than the incumbent, if so, post it
 	if (heuristic_solution->cost < incumbent) {
 
-		printf("Updating the incumbent from %lf to %lf\n", incumbent, heuristic_solution->cost);
+		if (VERBOSE > 2000) printf("Updating the incumbent from %lf to %lf\n", incumbent, heuristic_solution->cost);
 		check_sol(heuristic_solution->path, heuristic_solution->cost, inst);
 
 		int *succ_heuristics = (int *)malloc(inst->nnodes * sizeof(int));
@@ -436,10 +428,10 @@ void post_heuristic_solution(CPXCALLBACKCONTEXTptr context, instance *inst, int 
 
 /**
  * Callback function for CPLEX to add cuts
- * @param context
- * @param contextid
- * @param userhandle
- * @return
+ * @param context CPLEX callback context pointer
+ * @param contextid CPLEX callback context ID
+ * @param userhandle user-defined handle to pass user data
+ * @return 0 on success, non-zero on failure
  */
 int CPXPUBLIC candidate_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void *userhandle ) {
 	instance* inst = (instance*) userhandle;
@@ -461,13 +453,13 @@ int CPXPUBLIC candidate_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contexti
 	}
 	build_sol(xstar, inst, succ, comp, &ncomp);
 
+	// Retrieve incumbent
 	double incumbent;
 	double x_dummy;
-	//CPXcallbackgetinfodbl(context, CPXCALLBACKINFO_BEST_SOL, &incumbent);
 	CPXcallbackgetincumbent(context, &x_dummy, 0, 0, &incumbent);
 
 	if (ncomp >= 2) {
-
+		// Add SEC constraints for each component
 		int* index = (int *)malloc(inst->ncols * sizeof(int));
 		double* value = (double *)malloc(inst->ncols * sizeof(double));
 		if (index == NULL || value == NULL) {
@@ -509,7 +501,6 @@ int CPXPUBLIC candidate_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contexti
 
 		if (inst->mode == 2 || inst->mode == 4 || inst->mode == 6) {
 			post_heuristic_solution(context, inst, succ, ncomp, comp, incumbent);
-			//post_heuristic_solution(context, inst, succ, ncomp, comp, objval);
 		}
 	}
 
@@ -521,10 +512,10 @@ int CPXPUBLIC candidate_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contexti
 
 /**
  * Callback function for CPLEX to add usercuts
- * @param cut_val
- * @param cut_nodes
- * @param cut
- * @param params
+ * @param cut_val value of the cut
+ * @param cut_nodes number of nodes in the cut
+ * @param cut array containing the nodes in the cut
+ * @param params user-defined parameters passed to the callback
  * @return
  */
 int violated_cut_callback(double cut_val, int cut_nodes, int* cut, void* params) {
@@ -541,21 +532,11 @@ int violated_cut_callback(double cut_val, int cut_nodes, int* cut, void* params)
 	int nnz = 0;
 	for (int i = 0; i < cut_nodes; i++) {
 		for (int j = i+1; j < cut_nodes; j++) {
-			// if (cut[i] == cut[j]) continue;
 			index[nnz] = xpos(cut[i], cut[j], parameters->inst);
 			value[nnz] = 1.0;
 			nnz++;
 		}
 	}
-
-	/*double violation = cut_violation(nnz, rhs, sense, index, value, parameters->xstar);
-	double expected_violation = (2.0-cut_val)/2.0;
-	//printf("Generated a violated cut: violation %lf, expected violation %lf\n", violation, expected_violation);//press_a_key();
-	printf(" violation = %f | rhs = %f | nnz = %d | cut_val = %f\n", violation, rhs, nnz, cut_val);
-	if (fabs(violation - expected_violation) > EPS_COST) {
-
-		print_error("Cut not violated\n");
-	}*/
 
 	if(CPXcallbackaddusercuts(parameters->context, 1, nnz, &rhs, &sense, &rmatbeg, index, value, &purgeable, &local)) {print_error("Error on CPXcallbackaddusercuts()");}
 
@@ -567,13 +548,13 @@ int violated_cut_callback(double cut_val, int cut_nodes, int* cut, void* params)
 
 /**
  * Calculate the violation of a cut
- * @param nnz
- * @param rhs
- * @param sense
- * @param index
- * @param value
- * @param xstar
- * @return
+ * @param nnz number of non-zero entries in the cut
+ * @param rhs right-hand side value of the cut
+ * @param sense 'sense' of the cut
+ * @param index array containing the indices of the variables in the cut
+ * @param value array containing the coefficients of the variables in the cut
+ * @param xstar solution vector from CPLEX
+ * @return the violation of the cut
  */
 double cut_violation(int nnz, double rhs, char sense, int* index, double* value, double* xstar) {
 	double cut_val = 0.0;
@@ -593,9 +574,9 @@ double cut_violation(int nnz, double rhs, char sense, int* index, double* value,
 
 /**
  * Callback function for CPLEX to add cuts
- * @param context
- * @param contextid
- * @param userhandle
+ * @param context CPLEX callback context pointer
+ * @param contextid CPLEX callback context ID
+ * @param userhandle user-defined handle to pass user data
  * @return
  */
 int CPXPUBLIC relaxation_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void *userhandle ) {
@@ -613,10 +594,11 @@ int CPXPUBLIC relaxation_callback(CPXCALLBACKCONTEXTptr context, CPXLONG context
 		print_error("CPXcallbackgetinfoint error");
 	if (CPXcallbackgetinfoint(context, CPXCALLBACKINFO_NODECOUNT, &current_node))
 		print_error("CPXcallbackgetinfoint error");
-		
+
+	// Manage the number of times relaxation callback is applied
 	if(current_node % inst->nnodes != 0)
 		return 0;
-
+	// Build the edge list for the complete graph, make it suitable for Concorde's functions
 	int index = 0;
 	for (int i = 0; i < inst->nnodes; i++) {
 		for (int j = i+1; j < inst->nnodes; j++) {
@@ -656,7 +638,6 @@ int CPXPUBLIC relaxation_callback(CPXCALLBACKCONTEXTptr context, CPXLONG context
 		.ncomp = ncomp,
 		.inst = inst,
 		.xstar = xstar
-		//.cut_violation = 0
 	};
 
 	if (ncomp == 1) {
@@ -697,10 +678,10 @@ int CPXPUBLIC relaxation_callback(CPXCALLBACKCONTEXTptr context, CPXLONG context
 
 /**
  * Callback function for CPLEX to add cuts
- * @param context
- * @param contextid
- * @param userhandle
- * @return
+ * @param context CPLEX callback context pointer
+ * @param contextid CPLEX callback context ID
+ * @param userhandle user-defined handle to pass user data
+ * @return 0 on success, non-zero on failure
  */
 int CPXPUBLIC sec_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void* userhandle) {
 	instance* inst = (instance*) userhandle;
@@ -718,14 +699,14 @@ int CPXPUBLIC sec_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, voi
 
 /**
  * Branch and cut function
- * @param env
- * @param lp
- * @param contextid
- * @param inst
- * @param succ
- * @param ncomp
- * @param solution
- * @return
+ * @param env CPLEX environment pointer
+ * @param lp CPLEX LP pointer
+ * @param contextid CPLEX callback context ID
+ * @param inst instance containing the problem data
+ * @param succ successor array to be filled
+ * @param ncomp number of components found in the solution
+ * @param solution tour structure to store the solution
+ * @return 0 on success, non-zero on failure
  */
 int branch_and_cut(CPXENVptr env, CPXLPptr lp, CPXLONG contextid, instance *inst, int *succ, int ncomp, tour* solution) {
 	double objval = INF_COST;
@@ -757,10 +738,10 @@ int branch_and_cut(CPXENVptr env, CPXLPptr lp, CPXLONG contextid, instance *inst
 
 /**
  * Function to implement the patching heuristic to a solution
- * @param succ
- * @param ncomp
- * @param comp
- * @param inst
+ * @param succ successor array containing the next node in the tour for each node
+ * @param ncomp number of components in the solution
+ * @param comp component array indicating the component each node belongs to
+ * @param inst instance containing the problem data
  */
 void patching_heuristic(int* succ, int ncomp, int* comp, instance* inst) {
     if (succ == NULL) { print_error("Error occurred while allocating memory for succ\n"); }
@@ -837,10 +818,9 @@ void patching_heuristic(int* succ, int ncomp, int* comp, instance* inst) {
 
 /**
  * Solve the TSP problem using CPLEX
- * @param inst
- * @param alg
- * @param mode
- * @return
+ * @param inst instance containing the problem data
+ * @param alg algorithm to be used for solving the TSP problem
+ * @return 0 on success, non-zero on failure
  */
 int TSPopt(instance *inst, int alg) {
     // Open CPLEX model

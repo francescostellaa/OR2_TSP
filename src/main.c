@@ -100,7 +100,7 @@ int main(int argc, char **argv) {
             break;
         case 8:
             if (VERBOSE >= 1) { printf("Running Hard-Fixing...\n"); }
-            if (hard_fixing(&inst)) {
+            if (hard_fixing(&inst, &params)) {
                 print_error("Error in Hard-Fixing\n");
             }
             break;

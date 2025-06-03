@@ -8,7 +8,7 @@
 #include <tsp_utilities.h>
 
 double min(double a, double b);
-int hard_fixing(instance* inst);
+int hard_fixing(instance* inst, parameters* parameters);
 int local_branching(instance* inst, parameters* parameters);
 void initialize_cplex(instance* inst, CPXENVptr* env, CPXLPptr* lp);
 

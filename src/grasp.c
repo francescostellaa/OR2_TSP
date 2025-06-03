@@ -2,9 +2,10 @@
 
 /**
  * Implement the Greedy Randomized Adaptive Search Procedure (GRASP) algorithm
- * @param initial_point
- * @param inst
- * @param solution
+ * @param initial_point the index of the initial point to start the tour
+ * @param inst instance containing the problem data
+ * @param solution solution tour to be constructed
+ * @param prob_grasp probability of not choosing the nearest neighbor
  * @return zero on success, non-zero on failures
  */
 int grasp(int initial_point, const instance* inst, tour* solution, double prob_grasp) {
@@ -86,22 +87,23 @@ int grasp(int initial_point, const instance* inst, tour* solution, double prob_g
     solution->cost += inst->cost_matrix[solution->path[n - 1] * n + solution->path[n]];
 
     // Save the cost of the current solution
-    save_history_cost(solution->cost, "../data/GRASP/cost_grasp.txt");
+    save_history_cost(solution->cost, "../data/cost_grasp.txt");
 
     // Local Search Phase (2-opt heuristic)
     two_opt(solution, inst);
 
     // Save the cost of the current solution
-    save_history_cost(solution->cost, "../data/GRASP/cost_grasp.txt");
+    save_history_cost(solution->cost, "../data/cost_grasp.txt");
 
     return 0;
 }
 
 /**
  * Multi-start GRASP algorithm to solve the TSP
- * @param inst
- * @param timelimit
- * @return
+ * @param inst instance
+ * @param timelimit time limit for the algorithm
+ * @param prob_grasp probability of not choosing the nearest neighbor
+ * @return zero on success, non-zero on failures
  */
 int grasp_multi_start(instance* inst, double timelimit, double prob_grasp) {
 
@@ -142,14 +144,14 @@ int grasp_multi_start(instance* inst, double timelimit, double prob_grasp) {
         if (grasp(i, inst, solution, prob_grasp) == 0) {
             update_best_sol(inst, solution);
         }
-        save_history_incumbent(inst->best_sol->cost, "../data/GRASP/incumbent_grasp.txt");
+        save_history_incumbent(inst->best_sol->cost, "../data/incumbent_grasp.txt");
         free(solution->path);
         free(solution);
     }
 
     plot_solution(inst, inst->best_sol->path);
-    plot_incumbent("../data/GRASP/incumbent_grasp.txt", "../data/GRASP/incumbent_grasp.png");
-    plot_history_cost("../data/GRASP/cost_grasp.txt", "../data/GRASP/cost_grasp.png");
+    plot_incumbent("../data/incumbent_grasp.txt", "../data/incumbent_grasp.png");
+    plot_history_cost("../data/cost_grasp.txt", "../data/cost_grasp.png");
     if(VERBOSE >= 1) { printf("Best cost: %lf\n", inst->best_sol->cost); }
 
     return 0;

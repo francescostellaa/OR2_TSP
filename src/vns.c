@@ -36,7 +36,7 @@ int vns(const instance* inst, tour* solution, double timelimit, int num_kicks) {
             int* indices_to_kick = (int*)malloc(5 * sizeof(int));
 
             if (k == 2) {
-
+                // Shake 3 edges
                 for (int i = 0; i < num_kicks; i++) {
                     do {
                         indices_to_kick[0] = rand() % (n - 3);
@@ -51,7 +51,7 @@ int vns(const instance* inst, tour* solution, double timelimit, int num_kicks) {
         
             }
             else if (k > 2) {
-
+                // Select 5 edges to shake
                 do{
                     indices_to_kick[0] = rand() % (n - 5);
                     indices_to_kick[1] = indices_to_kick[0] + 1 + (rand() % (n - indices_to_kick[0] - 5));
@@ -70,7 +70,7 @@ int vns(const instance* inst, tour* solution, double timelimit, int num_kicks) {
             free(indices_to_kick);
         }
         compute_solution_cost(solution, inst);
-        //save_history_cost(solution->cost, "../data/VNS/cost_vns.txt");
+        save_history_cost(solution->cost, "../data/cost_vns.txt");
 
         two_opt(solution, inst);
         current_cost = solution->cost;
@@ -88,7 +88,7 @@ int vns(const instance* inst, tour* solution, double timelimit, int num_kicks) {
             }
         }
 
-        save_history_incumbent(current_best_cost, "../data/VNS/incumbent_vns.txt");
+        save_history_incumbent(current_best_cost, "../data/incumbent_vns.txt");
 
     }
 
@@ -98,9 +98,9 @@ int vns(const instance* inst, tour* solution, double timelimit, int num_kicks) {
     free(best_solution->path);
     free(best_solution);
     plot_solution(inst, solution->path);
-    plot_incumbent("../data/VNS/incumbent_vns.txt", "../data/VNS/incumbent_vns.png");
-    //plot_history_cost("../data/VNS/cost_vns.txt", "../data/VNS/cost_vns.png");
-    plot_incumbent_and_costs("../data/VNS/cost_vns.txt", "../data/VNS/incumbent_vns.txt", "../data/VNS/incumbent_and_costs_vns.png");
+    plot_incumbent("../data/incumbent_vns.txt", "../data/incumbent_vns.png");
+    plot_history_cost("../data/cost_vns.txt", "../data/cost_vns.png");
+    plot_incumbent_and_costs("../data/cost_vns.txt", "../data/incumbent_vns.txt", "../data/incumbent_and_costs_vns.png");
 
     return 0;
 }

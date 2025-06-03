@@ -13,8 +13,6 @@ data/VNS/*
 data/LOCALBRANCHING/*
 data/HARDFIXING/*
 data/GRASP/*
-data/HARDFIXING/*
-data/LOCALBRANCHING/*
 data/GENETIC/*
 perfprof/*.pdf
 perfprof/*.csv

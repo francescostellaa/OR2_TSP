@@ -2,6 +2,8 @@
 
 /**
  * Apply the 2-opt refinement to the solution
+ * @param solution tour to optimize
+ * @param inst instance containing the problem data
  */
 void two_opt(tour* solution, const instance* inst) {
     const int n = inst->nnodes;
@@ -12,11 +14,12 @@ void two_opt(tour* solution, const instance* inst) {
             break;
         }
 
+        // Initialize variables to find best swap
         improvement = 0;
         double best_delta = 0;
         int best_i = -1;
         int best_j = -1;
-
+        // Iterate through all pairs of edges in the tour to find the best swap
         for (int i = 0; i < n - 1; i++) {
             for (int j = i + 1; j < n; j++) {
                 double delta = inst->cost_matrix[solution->path[i] * n + solution->path[j]] +
@@ -49,6 +52,9 @@ void two_opt(tour* solution, const instance* inst) {
 
 /**
  * Shake the solution by swapping three edges, performing kicks in the solution
+ * @param solution original tour to shake
+ * @param inst instance containing the problem data
+ * @param elements_to_swap array containing the indices of the edges to swap
  */
 void shake_three_edges(tour* solution, const instance* inst, const int* elements_to_swap){
 
@@ -58,6 +64,7 @@ void shake_three_edges(tour* solution, const instance* inst, const int* elements
 
     const int reconnection = rand() % 4;
 
+    // Perform the reconnection based on the random choice
     switch (reconnection)
     {
         case 0:
@@ -81,6 +88,7 @@ void shake_three_edges(tour* solution, const instance* inst, const int* elements
             break;
     }
 
+    // Check solution feasibility
     compute_solution_cost(solution, inst);
     check_sol(solution->path, solution->cost, inst);
 }
@@ -88,6 +96,9 @@ void shake_three_edges(tour* solution, const instance* inst, const int* elements
 
 /**
  * Shake the solution by swapping five edges, performing kicks in the solution
+ * @param solution original tour to shake
+ * @param inst instance containing the problem data
+ * @param elements_to_swap array containing the indices of the edges to swap
  */
 void shake_five_edges(tour* solution, const instance* inst, const int* elements_to_swap){
 
@@ -124,6 +135,7 @@ void shake_five_edges(tour* solution, const instance* inst, const int* elements_
             break;
     }
 
+    // Check solution feasibility
     compute_solution_cost(solution, inst);
     check_sol(solution->path, solution->cost, inst);
 }

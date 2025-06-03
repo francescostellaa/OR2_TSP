@@ -33,7 +33,7 @@ void initialize_cplex(instance* inst, CPXENVptr* env, CPXLPptr* lp) {
     build_model(inst, *env, *lp);
     inst->ncols = CPXgetnumcols(*env, *lp);
 
-    if (CPXsetintparam(*env, CPX_PARAM_SCRIND, 0)) // Enable screen output
+    if (CPXsetintparam(*env, CPX_PARAM_SCRIND, 1)) // Enable screen output
         print_error("CPXsetintparam() error");
     if (CPXsetintparam(*env, CPX_PARAM_MIPDISPLAY, 2)) // Verbosity level
         print_error("CPXsetintparam() error");
@@ -46,12 +46,15 @@ void initialize_cplex(instance* inst, CPXENVptr* env, CPXLPptr* lp) {
 /**
  * This function implements the hard-fixing matheuristic for solving the TSP problem.
  * @param inst instance containing the problem data
+ * @param params parameters for the algorithm
  * @return zero on success, non-zero on failures
  */
-int hard_fixing(instance* inst) {
+int hard_fixing(instance* inst, parameters* params) {
 
-    if (inst->prob_hard_fixing < 0.2 || inst->prob_hard_fixing > 0.8) { print_error("Fixing probability cannot be greater than 0.8 or less than 0.2!\n"); }
+    // Check if probability of hard fixing is within the valid range
+    if (params->prob_hard_fixing < 0.2 || params->prob_hard_fixing > 0.8) { print_error("Fixing probability cannot be greater than 0.8 or less than 0.2!\n"); }
 
+    // Initialize temporary solution
     tour* solution = malloc(sizeof(tour));
     solution->path = malloc((inst->nnodes + 1) * sizeof(int));
     solution->cost = 0.0;
@@ -68,10 +71,8 @@ int hard_fixing(instance* inst) {
     CPXENVptr env;
     CPXLPptr lp;
     initialize_cplex(inst, &env, &lp);
-
     inst->ncols = CPXgetnumcols(env, lp);
-
-
+    // Set context id to install both candidate and relaxation callbacks
     CPXLONG contextid = CPX_CALLBACKCONTEXT_CANDIDATE | CPX_CALLBACKCONTEXT_RELAXATION;
 
     // Build succ vector from VNS solution
@@ -79,8 +80,8 @@ int hard_fixing(instance* inst) {
     int* succ = malloc(sizeof(int) * inst->nnodes);
     from_solution_to_succ(succ, solution, inst);
     for (int i = 0; i < inst->nnodes; i++) { xstar[xpos(i, succ[i], inst)] = 1.0; }
-    printf("Prob hard fixing: %lf\n", inst->prob_hard_fixing);
-    double p = inst->prob_hard_fixing;
+    if (VERBOSE > 2000) {printf("Prob hard fixing: %lf\n", params->prob_hard_fixing);}
+    double p = params->prob_hard_fixing;
     double residual_time = inst->timelimit - (inst->timelimit * 0.1);
     int error = 0;
 
@@ -90,6 +91,7 @@ int hard_fixing(instance* inst) {
     int *ind = malloc(inst->ncols * sizeof(int));
     for ( int j = 0; j < inst->ncols; j++ ) ind[j] = j;
 
+    // Use CPXaddmipstarts to add the initial solution from VNS as a MIP start
     int effortlevel = CPX_MIPSTART_NOCHECK;
     int beg = 0;
     if ( CPXaddmipstarts(env, lp, 1, inst->ncols, &beg, ind, xheu, &effortlevel, NULL)) {
@@ -97,14 +99,14 @@ int hard_fixing(instance* inst) {
     }
     free(ind);
     free(xheu);
-
+    // Install callbacks
     if(CPXcallbacksetfunc(env, lp, contextid, sec_callback, inst))
         print_error("CPXcallbacksetfunc() error");
     
     // Set the node limit to 1000 nodes
     if (CPXsetlongparam(env, CPX_PARAM_NODELIM, 1000)) { print_error("CPXsetlongparam() NODELIM error"); }
 
-    save_history_cost(solution->cost, "../data/HARDFIXING/cost_hard_fixing.txt");
+    save_history_cost(solution->cost, "../data/cost_hard_fixing.txt");
     int iteration = 0;
     while (true) {
         iteration++;
@@ -124,7 +126,7 @@ int hard_fixing(instance* inst) {
 
         // Set lower bounds of selected edges to 1.0
         if (cnt == 0) {
-            printf("No edges to fix\n");
+            if (VERBOSE > 100) {printf("No edges to fix\n");}
             free(fixed_edges);
             continue;
         }
@@ -141,6 +143,7 @@ int hard_fixing(instance* inst) {
         if (CPXsetdblparam(env, CPX_PARAM_TILIM, current_residual_time))
             print_error("CPXsetdblparam() error");
 
+        // Solve the model with the fixed edges
         if (CPXmipopt(env, lp)) {
             char errormsg[CPXMESSAGEBUFSIZE];
             CPXgeterrorstring(env, error, errormsg);
@@ -152,7 +155,6 @@ int hard_fixing(instance* inst) {
             CPXgeterrorstring(env, error, errormsg);
             print_error(errormsg);
         }
-
 
         // Update the solution if the new objective value is better
         if (objval + EPS_COST < solution->cost) {
@@ -170,7 +172,7 @@ int hard_fixing(instance* inst) {
             free(comp);
         }
 
-        save_history_cost(solution->cost, "../data/HARDFIXING/cost_hard_fixing.txt");
+        save_history_cost(solution->cost, "../data/cost_hard_fixing.txt");
 
         // Reset the lower bounds
         for (int i = 0; i < cnt; i++) {
@@ -182,7 +184,7 @@ int hard_fixing(instance* inst) {
         free(bd);
         free(lu);
         free(fixed_edges);
-        printf("Iteration %i, cost: %lf\n", iteration, solution->cost);
+        if (VERBOSE > 500) {printf("Iteration %i, cost: %lf\n", iteration, solution->cost);}
     }
 
     // Update the best solution
@@ -197,7 +199,7 @@ int hard_fixing(instance* inst) {
     CPXfreeprob(env, &lp);
     CPXcloseCPLEX(&env);
 
-    plot_history_cost("../data/HARDFIXING/cost_hard_fixing.txt", "../data/HARDFIXING/hard_fixing.png");
+    plot_history_cost("../data/cost_hard_fixing.txt", "../data/hard_fixing.png");
 
     return 0;
 }
@@ -209,11 +211,11 @@ int hard_fixing(instance* inst) {
  * @return zero on success, non-zero on failures
  */
 int local_branching(instance* inst, parameters* parameters) {
-
+    // Check if k_neighborhood is within the valid range
     if (parameters->k_neighborhood > inst->nnodes) {
         print_error("Error: k must be smaller than the number of nodes of the graph\n");
     }
-
+    // Initialize temporary solution
     tour* solution = malloc(sizeof(tour));
     solution->path = malloc((inst->nnodes + 1) * sizeof(int));
     solution->cost = 0.0;
@@ -232,7 +234,7 @@ int local_branching(instance* inst, parameters* parameters) {
     initialize_cplex(inst, &env, &lp);
 
     inst->ncols = CPXgetnumcols(env, lp);
-
+    // Set context id to install both candidate and relaxation callbacks
     CPXLONG contextid = CPX_CALLBACKCONTEXT_CANDIDATE | CPX_CALLBACKCONTEXT_RELAXATION;
 
     // Build succ vector from VNS solution
@@ -265,7 +267,7 @@ int local_branching(instance* inst, parameters* parameters) {
     if (CPXsetlongparam(env, CPX_PARAM_NODELIM, 1000))
         print_error("CPXsetlongparam() NODELIM error");
 
-    save_history_cost(solution->cost, "../data/LOCALBRANCHING/cost_local_branching.txt");
+    save_history_cost(solution->cost, "../data/cost_local_branching.txt");
     int iteration = 0;
 
     while(true) {
@@ -275,12 +277,11 @@ int local_branching(instance* inst, parameters* parameters) {
             break;
         }
 
+        // Create a new row for the local branching constraint
         int izero = 0;
         char sense = 'G';
         double rhs = (double) (inst->nnodes - k);   
         int nnz = 0;
-        /*int* index = malloc(inst->nnodes * sizeof(int));
-		double* value = malloc(inst->nnodes * sizeof(double));*/
         int max_edges = (inst->nnodes * (inst->nnodes - 1)) / 2;
         int* index = malloc(max_edges * sizeof(int));
         double* value = malloc(max_edges * sizeof(double));
@@ -306,7 +307,7 @@ int local_branching(instance* inst, parameters* parameters) {
         double current_residual_time = inst->timelimit - (second() - inst->tstart);
         if (CPXsetdblparam(env, CPX_PARAM_TILIM, min(current_residual_time, inst->timelimit * 0.1)))
             print_error("CPXsetdblparam() error");
-
+        // Solve the model with the local branching constraint
         if (CPXmipopt(env, lp)) {
             char errormsg[CPXMESSAGEBUFSIZE];
             CPXgeterrorstring(env, error, errormsg);
@@ -321,31 +322,30 @@ int local_branching(instance* inst, parameters* parameters) {
 
         // Check if the solution is optimal or CPLEX reached the time limit to
         // increase / decrease the neighborhood size
-        printf("Status %d\n",CPXgetstat(env, lp));
         if (CPXgetstat(env, lp) == CPXMIP_OPTIMAL || CPXgetstat(env, lp) == CPXMIP_NODE_LIM_FEAS) {
-            printf("Increasing neighborhood size to %d\n", k + 1);
+            if (VERBOSE > 500) {printf("Increasing neighborhood size to %d\n", k + 1);}
             k++;
             fflush(NULL);
             k++;
         }
         else if (CPXgetstat(env, lp) == CPXMIP_TIME_LIM_FEAS) {
             if (k > 1) {
-                printf("Decreasing neighborhood size to %d\n", k - 1);
+                if (VERBOSE > 500)  printf("Decreasing neighborhood size to %d\n", k - 1);
                 fflush(NULL);
                 k--;
             } else {
-                printf("No solution found, stopping local branching\n");
+                if (VERBOSE > 500) printf("No solution found, stopping local branching\n");
                 free(value);
                 free(index);
                 break;
             }
         } else {
             if (k > 1) {
-                printf("No solution found, decreasing neighborhood size to %d\n", k - 1);
+                if (VERBOSE > 500)  printf("No solution found, decreasing neighborhood size to %d\n", k - 1);
                 fflush(NULL);
                 k--;
             } else {
-                printf("No solution found, stopping local branching\n");
+                if (VERBOSE > 500) printf("No solution found, stopping local branching\n");
                 free(value);
                 free(index);
                 break;
@@ -374,11 +374,11 @@ int local_branching(instance* inst, parameters* parameters) {
             print_error("CPXdelrows() error");
         }
 
-        save_history_cost(solution->cost, "../data/LOCALBRANCHING/cost_local_branching.txt");
+        save_history_cost(solution->cost, "../data/cost_local_branching.txt");
 
         free(value);
         free(index);
-        printf("Iteration %d completed, current best cost: %lf, time: %lf\n", iteration, solution->cost, second() - inst->tstart);
+        if (VERBOSE > 500) printf("Iteration %d completed, current best cost: %lf, time: %lf\n", iteration, solution->cost, second() - inst->tstart);
     }
 
     update_best_sol(inst, solution);
@@ -391,7 +391,7 @@ int local_branching(instance* inst, parameters* parameters) {
     CPXfreeprob(env, &lp);
     CPXcloseCPLEX(&env);
 
-    plot_history_cost("../data/LOCALBRANCHING/cost_local_branching.txt", "../data/LOCALBRANCHING/local_branching.png");
+    plot_history_cost("../data/cost_local_branching.txt", "../data/local_branching.png");
     
     return 0;
 
